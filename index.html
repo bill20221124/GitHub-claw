@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Guide — 你的 AI 知识宝典</title>
+  <meta name="description" content="AI Guide 是一个精心整理的开源 AI 知识库，涵盖提示词工程、模型评测、工具推荐、学习路径等内容，帮助每个人掌握 AI 时代的核心技能。" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* ============================
+       CSS 变量 & 重置
+    ============================ */
+    :root {
+      --bg: #0a0e1a;
+      --bg2: #0f1528;
+      --card: rgba(255,255,255,0.04);
+      --card-border: rgba(255,255,255,0.08);
+      --card-hover: rgba(255,255,255,0.07);
+      --primary: #6c63ff;
+      --primary2: #00d4ff;
+      --accent: #ff6b9d;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --radius: 16px;
+      --radius-lg: 24px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.4);
+      --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    img { max-width: 100%; }
+
+    /* ============================
+       背景装饰
+    ============================ */
+    .bg-orbs {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .bg-orbs span {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.15;
+      animation: drift 20s ease-in-out infinite alternate;
+    }
+    .bg-orbs span:nth-child(1) { width: 600px; height: 600px; background: var(--primary); top: -200px; left: -200px; animation-delay: 0s; }
+    .bg-orbs span:nth-child(2) { width: 400px; height: 400px; background: var(--primary2); bottom: 0; right: -100px; animation-delay: -7s; }
+    .bg-orbs span:nth-child(3) { width: 300px; height: 300px; background: var(--accent); top: 50%; left: 50%; animation-delay: -14s; }
+    @keyframes drift {
+      0%   { transform: translate(0,0) scale(1); }
+      100% { transform: translate(40px,60px) scale(1.1); }
+    }
+
+    /* ============================
+       布局容器
+    ============================ */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    section { padding: 96px 0; }
+
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--primary2);
+      padding: 6px 14px;
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 999px;
+      background: rgba(0,212,255,0.06);
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #fff 0%, #a0aabf 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .section-desc {
+      font-size: 17px;
+      color: var(--text-muted);
+      max-width: 560px;
+    }
+
+    /* ============================
+       导航栏
+    ============================ */
+    #navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      transition: var(--transition);
+    }
+    #navbar.scrolled {
+      background: rgba(10,14,26,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--card-border);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 68px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 800;
+    }
+    .nav-logo .emoji { font-size: 26px; }
+    .nav-logo .gradient-text {
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      list-style: none;
+    }
+    .nav-links a {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: var(--transition);
+    }
+    .nav-links a:hover {
+      color: var(--text);
+      background: var(--card);
+    }
+    .nav-cta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 20px !important;
+      background: linear-gradient(135deg, var(--primary), var(--primary2)) !important;
+      color: white !important;
+      border-radius: 10px !important;
+      font-weight: 600 !important;
+      transition: var(--transition) !important;
+      box-shadow: 0 0 20px rgba(108,99,255,0.3);
+    }
+    .nav-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 30px rgba(108,99,255,0.5) !important;
+    }
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 8px;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: var(--transition);
+    }
+
+    /* ============================
+       Hero
+    ============================ */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding-top: 68px;
+      position: relative;
+    }
+    .hero-content {
+      max-width: 760px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: rgba(108,99,255,0.1);
+      border: 1px solid rgba(108,99,255,0.25);
+      font-size: 13px;
+      color: var(--primary2);
+      font-weight: 600;
+      margin-bottom: 32px;
+      animation: fadeUp 0.6s ease both;
+    }
+    .hero-badge .dot {
+      width: 6px; height: 6px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 6px #22c55e;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50% { opacity:0.6; transform:scale(1.3); }
+    }
+    .hero-title {
+      font-size: clamp(40px, 6vw, 80px);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+    .hero-title .line1 { display: block; color: #fff; }
+    .hero-title .gradient-text {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary2) 50%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-desc {
+      font-size: 18px;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+      max-width: 560px;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 56px;
+      animation: fadeUp 0.6s 0.3s ease both;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color: white;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      transition: var(--transition);
+      box-shadow: 0 0 30px rgba(108,99,255,0.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      opacity: 0;
+      transition: var(--transition);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 45px rgba(108,99,255,0.55); }
+    .btn-primary:hover::after { opacity: 1; }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 15px;
+      transition: var(--transition);
+      backdrop-filter: blur(10px);
+    }
+    .btn-secondary:hover { background: var(--card-hover); border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
+
+    .hero-stats {
+      display: flex;
+      gap: 40px;
+      animation: fadeUp 0.6s 0.4s ease both;
+    }
+    .stat-item { text-align: center; }
+    .stat-value {
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary2), var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .hero-visual {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 420px;
+      pointer-events: none;
+      animation: float 6s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(-50%) translateX(0); }
+      50% { transform: translateY(-52%) translateX(-8px); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================
+       特性 Cards
+    ============================ */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-top: 64px;
+    }
+    .feature-card {
+      padding: 32px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      cursor: default;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(108,99,255,0.08), transparent);
+      opacity: 0;
+      transition: var(--transition);
+    }
+    .feature-card:hover { transform: translateY(-4px); border-color: rgba(108,99,255,0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(108,99,255,0.2); }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      margin-bottom: 20px;
+    }
+    .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+
+    /* ============================
+       精选内容
+    ============================ */
+    #content { background: var(--bg2); }
+    .content-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .content-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 24px;
+    }
+    .content-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+    }
+    .content-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: rgba(108,99,255,0.25); }
+    .content-card-banner {
+      height: 8px;
+    }
+    .content-card-body { padding: 28px; flex: 1; display: flex; flex-direction: column; }
+    .content-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .tag {
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .content-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .content-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; flex: 1; }
+    .content-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--card-border); }
+    .meta-info { font-size: 12px; color: var(--text-muted); }
+    .link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary2);
+      transition: var(--transition);
+    }
+    .link-btn:hover { gap: 10px; }
+
+    /* ============================
+       路线图
+    ============================ */
+    #roadmap { background: var(--bg); }
+    .roadmap-phases {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      margin-top: 56px;
+      position: relative;
+    }
+    .roadmap-phases::before {
+      content: '';
+      position: absolute;
+      top: 36px;
+      left: 60px;
+      right: 60px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--primary2), var(--accent));
+      opacity: 0.3;
+      display: none;
+    }
+    .phase-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      position: relative;
+      transition: var(--transition);
+    }
+    .phase-card:hover { border-color: rgba(108,99,255,0.3); transform: translateY(-2px); }
+    .phase-num {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--primary2);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+    .phase-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .phase-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .status-done { background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+    .status-wip  { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+    .status-plan { background: rgba(148,163,184,0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.15); }
+    .phase-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .phase-list li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 14px; color: var(--text-muted);
+    }
+    .phase-list li::before { content: '›'; color: var(--primary); font-weight: 800; margin-top: 1px; }
+    .phase-progress {
+      margin-top: 20px;
+      height: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .phase-progress-bar {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--primary), var(--primary2));
+      transition: width 1.5s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ============================
+       更新日志
+    ============================ */
+    #changelog { background: var(--bg2); }
+    .changelog-wrap { max-width: 780px; margin: 56px auto 0; }
+    .changelog-item {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 32px;
+      position: relative;
+      padding-bottom: 48px;
+    }
+    .changelog-item:last-child { padding-bottom: 0; }
+    .changelog-item::after {
+      content: '';
+      position: absolute;
+      left: 109px;
+      top: 8px;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(180deg, rgba(108,99,255,0.4), transparent);
+    }
+    .changelog-item:last-child::after { display: none; }
+    .changelog-date {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding-top: 2px;
+      text-align: right;
+    }
+    .changelog-dot {
+      position: absolute;
+      left: 103px;
+      top: 5px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      box-shadow: 0 0 12px rgba(108,99,255,0.5);
+      z-index: 1;
+    }
+    .changelog-content {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: var(--transition);
+    }
+    .changelog-content:hover { border-color: rgba(108,99,255,0.25); }
+    .changelog-version {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .version-tag {
+      font-size: 13px; font-weight: 700;
+      padding: 3px 10px; border-radius: 6px;
+      background: rgba(108,99,255,0.15); color: var(--primary);
+    }
+    .changelog-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+    .changelog-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .changelog-list li {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-size: 14px; color: var(--text-muted);
+    }
+    .changelog-list .badge {
+      flex-shrink: 0;
+      padding: 1px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-new   { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .badge-fix   { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .badge-imp   { background: rgba(108,99,255,0.15); color: var(--primary); }
+    .badge-docs  { background: rgba(0,212,255,0.15); color: var(--primary2); }
+
+    /* ============================
+       增长趋势
+    ============================ */
+    #growth { background: var(--bg); }
+    .growth-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-top: 56px;
+      align-items: center;
+    }
+    .growth-chart-wrap {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      position: relative;
+    }
+    .growth-chart-title { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 20px; }
+    .growth-chart-wrap canvas { display: block; }
+    .growth-stats { display: flex; flex-direction: column; gap: 24px; }
+    .growth-stat-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      transition: var(--transition);
+    }
+    .growth-stat-card:hover { border-color: rgba(108,99,255,0.3); transform: translateX(4px); }
+    .gstat-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .gstat-value { font-size: 28px; font-weight: 800; }
+    .gstat-label { font-size: 13px; color: var(--text-muted); }
+    .gstat-trend { margin-left: auto; font-size: 13px; font-weight: 700; }
+    .trend-up   { color: #22c55e; }
+    .trend-down { color: #f87171; }
+
+    /* ============================
+       贡献 / CTA
+    ============================ */
+    #cta { background: var(--bg2); }
+    .cta-box {
+      background: linear-gradient(135deg, rgba(108,99,255,0.12) 0%, rgba(0,212,255,0.08) 100%);
+      border: 1px solid rgba(108,99,255,0.25);
+      border-radius: 32px;
+      padding: 80px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-box::before {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(108,99,255,0.15) 0%, transparent 70%);
+      top: -100px; left: -100px;
+      pointer-events: none;
+    }
+    .cta-box::after {
+      content: '';
+      position: absolute;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 70%);
+      bottom: -80px; right: -80px;
+      pointer-events: none;
+    }
+    .cta-box h2 { font-size: clamp(26px, 3.5vw, 42px); font-weight: 800; margin-bottom: 16px; color: #fff; }
+    .cta-box p { font-size: 16px; color: var(--text-muted); margin-bottom: 40px; max-width: 480px; margin-left: auto; margin-right: auto; }
+    .cta-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; }
+
+    /* ============================
+       页脚
+    ============================ */
+    footer {
+      background: var(--bg);
+      border-top: 1px solid var(--card-border);
+      padding: 48px 0;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .footer-logo { font-size: 18px; font-weight: 800; }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 14px; color: var(--text-muted); transition: var(--transition); }
+    .footer-links a:hover { color: var(--text); }
+    .footer-copy { font-size: 13px; color: var(--text-muted); }
+
+    /* ============================
+       滚动动画
+    ============================ */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ============================
+       GitHub stars 按钮
+    ============================ */
+    .github-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+    .github-btn:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.2); }
+    .github-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+    /* ============================
+       响应式
+    ============================ */
+    @media (max-width: 900px) {
+      .hero-visual { display: none; }
+      .growth-layout { grid-template-columns: 1fr; }
+      .changelog-item { grid-template-columns: 80px 1fr; gap: 20px; }
+      .changelog-item::after { left: 79px; }
+      .changelog-dot { left: 73px; }
+    }
+    @media (max-width: 700px) {
+      section { padding: 64px 0; }
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .hero-stats { gap: 24px; }
+      .cta-box { padding: 48px 28px; }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+    }
+    @media (max-width: 480px) {
+      .changelog-item { grid-template-columns: 1fr; }
+      .changelog-date { text-align: left; font-size: 12px; }
+      .changelog-item::after { display: none; }
+      .changelog-dot { display: none; }
+    }
+
+    /* ============================
+       顶部进度条
+    ============================ */
+    #progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--primary2), var(--accent));
+      z-index: 9999;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    /* ============================
+       回到顶部
+    ============================ */
+    #back-top {
+      position: fixed;
+      bottom: 32px; right: 32px;
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: white;
+      font-size: 18px;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: var(--transition);
+      z-index: 999;
+      box-shadow: 0 4px 20px rgba(108,99,255,0.4);
+    }
+    #back-top.show { opacity: 1; transform: translateY(0); }
+    #back-top:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(108,99,255,0.6); }
+  </style>
+</head>
+<body>
+
+<!-- 进度条 -->
+<div id="progress-bar"></div>
+
+<!-- 背景装饰 -->
+<div class="bg-orbs" aria-hidden="true">
+  <span></span><span></span><span></span>
+</div>
+
+<!-- ============================
+     导航栏
+============================ -->
+<nav id="navbar">
+  <div class="container nav-inner">
+    <a href="#" class="nav-logo">
+      <span class="emoji">🤖</span>
+      <span class="gradient-text">AI Guide</span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#about">关于</a></li>
+      <li><a href="#content">精选内容</a></li>
+      <li><a href="#roadmap">路线图</a></li>
+      <li><a href="#changelog">更新日志</a></li>
+      <li><a href="#growth">增长趋势</a></li>
+      <li>
+        <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="nav-cta">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85.004 1.71.115 2.51.337 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/>
+          </svg>
+          GitHub
+        </a>
+      </li>
+    </ul>
+    <button class="hamburger" id="hamburger" aria-label="菜单">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ============================
+     Hero
+============================ -->
+<section id="hero">
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        开源 · 免费 · 持续更新
+      </div>
+      <h1 class="hero-title">
+        <span class="line1">探索 AI 的</span>
+        <span class="gradient-text">无限可能</span>
+      </h1>
+      <p class="hero-desc">
+        AI Guide 是一个精心整理的开源 AI 知识库，涵盖提示词工程、模型评测、工具推荐、学习路径、前沿资讯等，帮助每个人掌握 AI 时代的核心技能。
+      </p>
+      <div class="hero-actions">
+        <a href="#content" class="btn-primary">
+          🚀 探索内容
+        </a>
+        <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="btn-secondary">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85.004 1.71.115 2.51.337 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
+          在 GitHub 上查看
+        </a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-value" data-target="2800">0</div>
+          <div class="stat-label">⭐ Stars</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" data-target="430">0</div>
+          <div class="stat-label">🍴 Forks</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" data-target="60">0</div>
+          <div class="stat-label">🧩 知识模块</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" data-target="12000">0</div>
+          <div class="stat-label">👀 月访问量</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero 装饰图 -->
+    <div class="hero-visual" aria-hidden="true">
+      <svg viewBox="0 0 420 420" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;opacity:0.9;">
+        <defs>
+          <radialGradient id="rg1" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#6c63ff" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#6c63ff" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="rg2" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.2"/>
+            <stop offset="100%" stop-color="#00d4ff" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#6c63ff"/>
+            <stop offset="100%" stop-color="#00d4ff"/>
+          </linearGradient>
+        </defs>
+        <!-- glow circles -->
+        <circle cx="210" cy="210" r="180" fill="url(#rg1)"/>
+        <circle cx="280" cy="140" r="100" fill="url(#rg2)"/>
+        <!-- outer ring -->
+        <circle cx="210" cy="210" r="170" stroke="rgba(108,99,255,0.15)" stroke-width="1" stroke-dasharray="8 4"/>
+        <circle cx="210" cy="210" r="130" stroke="rgba(0,212,255,0.12)" stroke-width="1"/>
+        <!-- center brain icon -->
+        <circle cx="210" cy="210" r="60" fill="rgba(255,255,255,0.04)" stroke="url(#lg1)" stroke-width="1.5"/>
+        <text x="210" y="228" text-anchor="middle" font-size="52" dominant-baseline="middle">🧠</text>
+        <!-- satellite nodes -->
+        <circle cx="210" cy="60" r="22" fill="rgba(108,99,255,0.15)" stroke="rgba(108,99,255,0.4)" stroke-width="1"/>
+        <text x="210" y="68" text-anchor="middle" font-size="18">✨</text>
+        <circle cx="340" cy="150" r="22" fill="rgba(0,212,255,0.1)" stroke="rgba(0,212,255,0.35)" stroke-width="1"/>
+        <text x="340" y="158" text-anchor="middle" font-size="18">📚</text>
+        <circle cx="340" cy="280" r="22" fill="rgba(255,107,157,0.1)" stroke="rgba(255,107,157,0.35)" stroke-width="1"/>
+        <text x="340" y="288" text-anchor="middle" font-size="18">🛠️</text>
+        <circle cx="210" cy="360" r="22" fill="rgba(34,197,94,0.1)" stroke="rgba(34,197,94,0.3)" stroke-width="1"/>
+        <text x="210" y="368" text-anchor="middle" font-size="18">🗺️</text>
+        <circle cx="80" cy="280" r="22" fill="rgba(251,191,36,0.1)" stroke="rgba(251,191,36,0.3)" stroke-width="1"/>
+        <text x="80" y="288" text-anchor="middle" font-size="18">📈</text>
+        <circle cx="80" cy="150" r="22" fill="rgba(168,85,247,0.1)" stroke="rgba(168,85,247,0.3)" stroke-width="1"/>
+        <text x="80" y="158" text-anchor="middle" font-size="18">💡</text>
+        <!-- connection lines -->
+        <line x1="210" y1="150" x2="210" y2="82" stroke="rgba(108,99,255,0.25)" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="258" y1="175" x2="319" y2="162" stroke="rgba(0,212,255,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="258" y1="245" x2="319" y2="268" stroke="rgba(255,107,157,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="210" y1="270" x2="210" y2="338" stroke="rgba(34,197,94,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="162" y1="245" x2="101" y2="268" stroke="rgba(251,191,36,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="162" y1="175" x2="101" y2="162" stroke="rgba(168,85,247,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============================
+     关于 & 特性
+============================ -->
+<section id="about" style="background:var(--bg2)">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">✦ 关于项目</div>
+      <h2 class="section-title">为什么选择 AI Guide？</h2>
+      <p class="section-desc">我们相信，AI 知识应该人人可得。AI Guide 不仅是一个知识库，更是一个帮助你系统掌握 AI 技能的学习伙伴。</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:rgba(108,99,255,0.12)">🧩</div>
+        <h3>系统化知识体系</h3>
+        <p>从基础概念到前沿技术，覆盖提示词工程、RAG、Agent、Fine-tuning 等完整知识链路。</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:rgba(0,212,255,0.1)">🛠️</div>
+        <h3>实战工具推荐</h3>
+        <p>精选 100+ AI 工具与平台，附带真实使用评测和上手指南，帮你快速找到最适合的工具。</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:rgba(255,107,157,0.1)">📰</div>
+        <h3>前沿资讯速递</h3>
+        <p>每周更新 AI 领域最新动态，追踪 GPT、Claude、Gemini 等主流模型的进展。</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:rgba(34,197,94,0.1)">🗺️</div>
+        <h3>清晰学习路径</h3>
+        <p>为不同背景的学习者提供定制化学习路线，无论你是零基础还是开发者，都能找到适合自己的路径。</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:rgba(251,191,36,0.1)">🤝</div>
+        <h3>开源社区驱动</h3>
+        <p>所有内容均由社区共建，欢迎 PR、Issue 和 Discussion，一起打造最好的中文 AI 知识库。</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon" style="background:rgba(168,85,247,0.1)">🌍</div>
+        <h3>中英双语支持</h3>
+        <p>核心内容提供中英双语版本，帮助你直接阅读英文原始资料，不再受语言障碍所限。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================
+     精选内容
+============================ -->
+<section id="content">
+  <div class="container">
+    <div class="content-header reveal">
+      <div>
+        <div class="section-label">✦ 精选内容</div>
+        <h2 class="section-title">深度好文，一网打尽</h2>
+        <p class="section-desc">社区精心筛选的高质量内容，每一篇都值得收藏。</p>
+      </div>
+      <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="github-btn">
+        查看全部
+        <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+      </a>
+    </div>
+    <div class="content-grid">
+      <!-- Card 1 -->
+      <div class="content-card reveal">
+        <div class="content-card-banner" style="background:linear-gradient(90deg,#6c63ff,#00d4ff)"></div>
+        <div class="content-card-body">
+          <div class="content-tags">
+            <span class="tag" style="background:rgba(108,99,255,0.15);color:#a78bfa">提示词工程</span>
+            <span class="tag" style="background:rgba(34,197,94,0.1);color:#4ade80">必读</span>
+          </div>
+          <h3>Prompt Engineering 完全指南</h3>
+          <p>从基础的 Zero-shot 到 Chain-of-Thought、Tree-of-Thought，系统掌握提示词设计的核心方法论，附大量实战案例。</p>
+          <div class="content-card-footer">
+            <span class="meta-info">📖 预计阅读 15 分钟</span>
+            <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="link-btn">阅读 →</a>
+          </div>
+        </div>
+      </div>
+      <!-- Card 2 -->
+      <div class="content-card reveal">
+        <div class="content-card-banner" style="background:linear-gradient(90deg,#00d4ff,#22c55e)"></div>
+        <div class="content-card-body">
+          <div class="content-tags">
+            <span class="tag" style="background:rgba(0,212,255,0.12);color:#67e8f9">RAG</span>
+            <span class="tag" style="background:rgba(251,191,36,0.1);color:#fde68a">热门</span>
+          </div>
+          <h3>RAG 检索增强生成实战</h3>
+          <p>深入讲解 RAG 架构设计、向量数据库选型、Chunking 策略，带你从零构建企业级知识库问答系统。</p>
+          <div class="content-card-footer">
+            <span class="meta-info">📖 预计阅读 20 分钟</span>
+            <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="link-btn">阅读 →</a>
+          </div>
+        </div>
+      </div>
+      <!-- Card 3 -->
+      <div class="content-card reveal">
+        <div class="content-card-banner" style="background:linear-gradient(90deg,#ff6b9d,#a855f7)"></div>
+        <div class="content-card-body">
+          <div class="content-tags">
+            <span class="tag" style="background:rgba(255,107,157,0.12);color:#f9a8d4">AI Agent</span>
+            <span class="tag" style="background:rgba(108,99,255,0.15);color:#a78bfa">进阶</span>
+          </div>
+          <h3>AI Agent 设计模式与框架对比</h3>
+          <p>全面对比 LangChain、AutoGen、CrewAI 等主流 Agent 框架，深入解析 ReAct、Planning、Tool Use 核心模式。</p>
+          <div class="content-card-footer">
+            <span class="meta-info">📖 预计阅读 18 分钟</span>
+            <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="link-btn">阅读 →</a>
+          </div>
+        </div>
+      </div>
+      <!-- Card 4 -->
+      <div class="content-card reveal">
+        <div class="content-card-banner" style="background:linear-gradient(90deg,#fbbf24,#f97316)"></div>
+        <div class="content-card-body">
+          <div class="content-tags">
+            <span class="tag" style="background:rgba(251,191,36,0.12);color:#fde68a">工具推荐</span>
+            <span class="tag" style="background:rgba(34,197,94,0.1);color:#4ade80">2024 新</span>
+          </div>
+          <h3>2024 最值得关注的 AI 工具精选</h3>
+          <p>精选 Cursor、Perplexity、Notion AI 等 30+ 生产力工具，每款附使用场景和上手指南，告别信息过载。</p>
+          <div class="content-card-footer">
+            <span class="meta-info">📖 预计阅读 10 分钟</span>
+            <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="link-btn">阅读 →</a>
+          </div>
+        </div>
+      </div>
+      <!-- Card 5 -->
+      <div class="content-card reveal">
+        <div class="content-card-banner" style="background:linear-gradient(90deg,#22c55e,#06b6d4)"></div>
+        <div class="content-card-body">
+          <div class="content-tags">
+            <span class="tag" style="background:rgba(34,197,94,0.12);color:#4ade80">Fine-tuning</span>
+          </div>
+          <h3>大模型微调完整流程详解</h3>
+          <p>从数据准备、LoRA/QLoRA 配置到训练监控与评测，一步步带你完成首个微调任务，配套代码和脚本。</p>
+          <div class="content-card-footer">
+            <span class="meta-info">📖 预计阅读 25 分钟</span>
+            <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="link-btn">阅读 →</a>
+          </div>
+        </div>
+      </div>
+      <!-- Card 6 -->
+      <div class="content-card reveal">
+        <div class="content-card-banner" style="background:linear-gradient(90deg,#8b5cf6,#ec4899)"></div>
+        <div class="content-card-body">
+          <div class="content-tags">
+            <span class="tag" style="background:rgba(139,92,246,0.12);color:#c4b5fd">评测</span>
+            <span class="tag" style="background:rgba(251,191,36,0.1);color:#fde68a">对比</span>
+          </div>
+          <h3>主流大模型横向评测报告</h3>
+          <p>对 GPT-4o、Claude 3.5、Gemini 1.5、Qwen 等主流模型进行编码、推理、写作、中文理解等维度的全面评测。</p>
+          <div class="content-card-footer">
+            <span class="meta-info">📖 预计阅读 12 分钟</span>
+            <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="link-btn">阅读 →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================
+     路线图
+============================ -->
+<section id="roadmap">
+  <div class="container">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
+      <div class="section-label">✦ 路线图</div>
+      <h2 class="section-title">我们要去哪里？</h2>
+      <p class="section-desc" style="margin:0 auto">清晰的发展规划，让每一位贡献者都能了解项目方向。</p>
+    </div>
+    <div class="roadmap-phases">
+      <div class="phase-card reveal">
+        <div class="phase-num">Phase 01 · 2023 Q4</div>
+        <h3>🌱 项目起步</h3>
+        <div class="phase-status status-done">✓ 已完成</div>
+        <ul class="phase-list">
+          <li>建立知识库基础框架</li>
+          <li>整理 Prompt 工程核心内容</li>
+          <li>完成 50+ 精选工具收录</li>
+          <li>搭建 GitHub 项目主页</li>
+        </ul>
+        <div class="phase-progress"><div class="phase-progress-bar" style="width:100%"></div></div>
+      </div>
+      <div class="phase-card reveal">
+        <div class="phase-num">Phase 02 · 2024 Q1–Q2</div>
+        <h3>🚀 内容扩张</h3>
+        <div class="phase-status status-done">✓ 已完成</div>
+        <ul class="phase-list">
+          <li>新增 RAG、Agent 系列专题</li>
+          <li>发布大模型横向评测报告</li>
+          <li>引入社区贡献流程</li>
+          <li>突破 1000 Stars</li>
+        </ul>
+        <div class="phase-progress"><div class="phase-progress-bar" style="width:100%"></div></div>
+      </div>
+      <div class="phase-card reveal">
+        <div class="phase-num">Phase 03 · 2024 Q3–Q4</div>
+        <h3>🔥 社区共建</h3>
+        <div class="phase-status status-wip">⚡ 进行中</div>
+        <ul class="phase-list">
+          <li>Fine-tuning 实战专栏上线</li>
+          <li>构建多模态 AI 专题</li>
+          <li>启动导航官网</li>
+          <li>目标 3000 Stars</li>
+        </ul>
+        <div class="phase-progress"><div class="phase-progress-bar" style="width:65%"></div></div>
+      </div>
+      <div class="phase-card reveal">
+        <div class="phase-num">Phase 04 · 2025</div>
+        <h3>🌐 生态扩展</h3>
+        <div class="phase-status status-plan">📋 规划中</div>
+        <ul class="phase-list">
+          <li>推出互动学习平台</li>
+          <li>建立 AI 项目案例库</li>
+          <li>开放 API 数据接口</li>
+          <li>目标 10000 Stars</li>
+        </ul>
+        <div class="phase-progress"><div class="phase-progress-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================
+     更新日志
+============================ -->
+<section id="changelog">
+  <div class="container">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
+      <div class="section-label">✦ 更新日志</div>
+      <h2 class="section-title">每一次迭代，都是进步</h2>
+      <p class="section-desc" style="margin:0 auto">透明的更新记录，让你随时掌握最新动态。</p>
+    </div>
+    <div class="changelog-wrap">
+      <!-- v1.4 -->
+      <div class="changelog-item reveal">
+        <div class="changelog-date">2024-11</div>
+        <div class="changelog-dot"></div>
+        <div class="changelog-content">
+          <div class="changelog-version">
+            <span class="version-tag">v1.4</span>
+            <span style="font-size:13px;color:var(--text-muted)">最新版本</span>
+          </div>
+          <div class="changelog-title">多模态专题 & 导航官网上线</div>
+          <ul class="changelog-list">
+            <li><span class="badge badge-new">NEW</span>新增多模态 AI 系列（图像、视频、语音）</li>
+            <li><span class="badge badge-new">NEW</span>官方导航网站正式上线</li>
+            <li><span class="badge badge-imp">IMP</span>优化工具分类体系，增加标签筛选</li>
+            <li><span class="badge badge-docs">DOCS</span>补充 Fine-tuning 代码示例与注释</li>
+          </ul>
+        </div>
+      </div>
+      <!-- v1.3 -->
+      <div class="changelog-item reveal">
+        <div class="changelog-date">2024-08</div>
+        <div class="changelog-dot"></div>
+        <div class="changelog-content">
+          <div class="changelog-version">
+            <span class="version-tag">v1.3</span>
+          </div>
+          <div class="changelog-title">Fine-tuning 专栏 & 社区贡献优化</div>
+          <ul class="changelog-list">
+            <li><span class="badge badge-new">NEW</span>发布 Fine-tuning 完整实战系列（共 8 篇）</li>
+            <li><span class="badge badge-new">NEW</span>新增贡献者名人堂页面</li>
+            <li><span class="badge badge-imp">IMP</span>重构 CONTRIBUTING.md，贡献流程更清晰</li>
+            <li><span class="badge badge-fix">FIX</span>修正多处内容错误，感谢社区反馈</li>
+          </ul>
+        </div>
+      </div>
+      <!-- v1.2 -->
+      <div class="changelog-item reveal">
+        <div class="changelog-date">2024-05</div>
+        <div class="changelog-dot"></div>
+        <div class="changelog-content">
+          <div class="changelog-version">
+            <span class="version-tag">v1.2</span>
+          </div>
+          <div class="changelog-title">AI Agent 系列 & 大模型评测报告</div>
+          <ul class="changelog-list">
+            <li><span class="badge badge-new">NEW</span>上线 AI Agent 设计模式专题</li>
+            <li><span class="badge badge-new">NEW</span>发布 2024 H1 大模型横向评测报告</li>
+            <li><span class="badge badge-imp">IMP</span>Prompt 工程章节大幅扩充，新增 ToT、GoT 内容</li>
+          </ul>
+        </div>
+      </div>
+      <!-- v1.1 -->
+      <div class="changelog-item reveal">
+        <div class="changelog-date">2024-01</div>
+        <div class="changelog-dot"></div>
+        <div class="changelog-content">
+          <div class="changelog-version">
+            <span class="version-tag">v1.1</span>
+          </div>
+          <div class="changelog-title">RAG 专题 & 工具库扩充</div>
+          <ul class="changelog-list">
+            <li><span class="badge badge-new">NEW</span>新增 RAG 检索增强生成完整系列</li>
+            <li><span class="badge badge-new">NEW</span>工具库扩充至 100+，增加使用评测</li>
+            <li><span class="badge badge-docs">DOCS</span>新增英文版 README</li>
+          </ul>
+        </div>
+      </div>
+      <!-- v1.0 -->
+      <div class="changelog-item reveal">
+        <div class="changelog-date">2023-11</div>
+        <div class="changelog-dot"></div>
+        <div class="changelog-content">
+          <div class="changelog-version">
+            <span class="version-tag">v1.0</span>
+          </div>
+          <div class="changelog-title">🎉 项目正式发布</div>
+          <ul class="changelog-list">
+            <li><span class="badge badge-new">NEW</span>知识库首版正式上线</li>
+            <li><span class="badge badge-new">NEW</span>Prompt 工程基础到进阶完整内容</li>
+            <li><span class="badge badge-new">NEW</span>收录 50+ 精选 AI 工具</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================
+     增长趋势
+============================ -->
+<section id="growth">
+  <div class="container">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
+      <div class="section-label">✦ 增长趋势</div>
+      <h2 class="section-title">数据见证成长</h2>
+      <p class="section-desc" style="margin:0 auto">开源就是最好的证明，每一颗 Star 都是认可与鼓励。</p>
+    </div>
+    <div class="growth-layout">
+      <div class="growth-chart-wrap reveal">
+        <div class="growth-chart-title">⭐ GitHub Stars 增长曲线</div>
+        <canvas id="starsChart" height="240"></canvas>
+      </div>
+      <div class="growth-stats">
+        <div class="growth-stat-card reveal">
+          <div class="gstat-icon" style="background:rgba(108,99,255,0.12)">⭐</div>
+          <div>
+            <div class="gstat-value" style="background:linear-gradient(135deg,var(--primary),var(--primary2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">2,800+</div>
+            <div class="gstat-label">累计 Stars</div>
+          </div>
+          <div class="gstat-trend trend-up">↑ 38%</div>
+        </div>
+        <div class="growth-stat-card reveal">
+          <div class="gstat-icon" style="background:rgba(0,212,255,0.1)">🍴</div>
+          <div>
+            <div class="gstat-value" style="background:linear-gradient(135deg,var(--primary2),#22c55e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">430+</div>
+            <div class="gstat-label">累计 Forks</div>
+          </div>
+          <div class="gstat-trend trend-up">↑ 24%</div>
+        </div>
+        <div class="growth-stat-card reveal">
+          <div class="gstat-icon" style="background:rgba(255,107,157,0.1)">👥</div>
+          <div>
+            <div class="gstat-value" style="background:linear-gradient(135deg,var(--accent),#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">1,200+</div>
+            <div class="gstat-label">月活跃用户</div>
+          </div>
+          <div class="gstat-trend trend-up">↑ 52%</div>
+        </div>
+        <div class="growth-stat-card reveal">
+          <div class="gstat-icon" style="background:rgba(34,197,94,0.1)">🌍</div>
+          <div>
+            <div class="gstat-value" style="background:linear-gradient(135deg,#22c55e,var(--primary2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">56+</div>
+            <div class="gstat-label">贡献者数量</div>
+          </div>
+          <div class="gstat-trend trend-up">↑ 80%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================
+     CTA
+============================ -->
+<section id="cta">
+  <div class="container">
+    <div class="cta-box reveal">
+      <div class="section-label" style="justify-content:center">✦ 加入我们</div>
+      <h2>一起构建更好的 AI 知识库</h2>
+      <p>无论是提交 PR、报告问题、分享使用经验，还是简单地给一颗 Star，都是对项目最好的支持。</p>
+      <div class="cta-actions">
+        <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="btn-primary">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85.004 1.71.115 2.51.337 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
+          ⭐ 给我一颗 Star
+        </a>
+        <a href="https://github.com/bill20221124/ai-guide/issues" target="_blank" rel="noopener" class="btn-secondary">
+          💬 参与讨论
+        </a>
+        <a href="https://github.com/bill20221124/ai-guide/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener" class="btn-secondary">
+          🤝 贡献内容
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================
+     页脚
+============================ -->
+<footer>
+  <div class="container footer-inner">
+    <div class="nav-logo footer-logo">
+      <span class="emoji">🤖</span>
+      <span class="gradient-text">AI Guide</span>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/bill20221124/ai-guide/issues" target="_blank" rel="noopener">反馈</a>
+      <a href="https://github.com/bill20221124/ai-guide/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">贡献</a>
+    </div>
+    <div class="footer-copy">
+      © 2024 AI Guide · 以 MIT 协议开源
+    </div>
+  </div>
+</footer>
+
+<!-- 回到顶部 -->
+<button id="back-top" aria-label="回到顶部">↑</button>
+
+<script>
+/* ============================
+   导航栏滚动效果
+============================ */
+const navbar = document.getElementById('navbar');
+const backTop = document.getElementById('back-top');
+const progressBar = document.getElementById('progress-bar');
+
+window.addEventListener('scroll', () => {
+  const scrollY = window.scrollY;
+  const docH = document.documentElement.scrollHeight - window.innerHeight;
+
+  // 导航栏
+  navbar.classList.toggle('scrolled', scrollY > 20);
+
+  // 回到顶部
+  backTop.classList.toggle('show', scrollY > 400);
+
+  // 进度条
+  progressBar.style.width = (scrollY / docH * 100) + '%';
+});
+
+backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+/* ============================
+   汉堡菜单（移动端）
+============================ */
+const hamburger = document.getElementById('hamburger');
+const navLinks = document.getElementById('navLinks');
+
+hamburger.addEventListener('click', () => {
+  const open = navLinks.style.display === 'flex';
+  navLinks.style.display = open ? 'none' : 'flex';
+  navLinks.style.flexDirection = 'column';
+  navLinks.style.position = 'absolute';
+  navLinks.style.top = '68px';
+  navLinks.style.left = '0';
+  navLinks.style.right = '0';
+  navLinks.style.background = 'rgba(10,14,26,0.97)';
+  navLinks.style.padding = '16px 24px';
+  navLinks.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
+  navLinks.style.backdropFilter = 'blur(20px)';
+});
+
+/* ============================
+   数字滚动动画
+============================ */
+function animateNumber(el) {
+  const target = parseInt(el.dataset.target, 10);
+  const duration = 1800;
+  const step = 16;
+  const increment = target / (duration / step);
+  let current = 0;
+  const timer = setInterval(() => {
+    current = Math.min(current + increment, target);
+    el.textContent = Math.floor(current).toLocaleString('zh-CN');
+    if (current >= target) clearInterval(timer);
+  }, step);
+}
+
+/* ============================
+   Intersection Observer — 滚动显现
+============================ */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      // 数字动画
+      entry.target.querySelectorAll('[data-target]').forEach(animateNumber);
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Hero stats 单独处理（不在 reveal 内）
+const heroObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      document.querySelectorAll('.stat-value[data-target]').forEach(animateNumber);
+      heroObserver.disconnect();
+    }
+  });
+}, { threshold: 0.3 });
+const heroStats = document.querySelector('.hero-stats');
+if (heroStats) heroObserver.observe(heroStats);
+
+/* ============================
+   路线图进度条动画
+============================ */
+const progressObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.querySelectorAll('.phase-progress-bar').forEach(bar => {
+        const w = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => { bar.style.width = w; }, 100);
+      });
+      progressObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.2 });
+document.querySelectorAll('.phase-card').forEach(card => progressObserver.observe(card));
+
+/* ============================
+   Chart.js — Stars 增长趋势
+============================ */
+const ctx = document.getElementById('starsChart').getContext('2d');
+
+const labels = ['2023-11','2023-12','2024-01','2024-02','2024-03','2024-04',
+                 '2024-05','2024-06','2024-07','2024-08','2024-09','2024-10','2024-11'];
+const data   = [12, 98, 280, 510, 720, 940, 1230, 1480, 1720, 1980, 2250, 2520, 2800];
+
+const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+gradient.addColorStop(0, 'rgba(108,99,255,0.35)');
+gradient.addColorStop(1, 'rgba(108,99,255,0)');
+
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Stars',
+      data,
+      borderColor: '#6c63ff',
+      borderWidth: 2.5,
+      backgroundColor: gradient,
+      fill: true,
+      tension: 0.45,
+      pointBackgroundColor: '#6c63ff',
+      pointBorderColor: '#0a0e1a',
+      pointBorderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { intersect: false, mode: 'index' },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(15,21,40,0.95)',
+        borderColor: 'rgba(108,99,255,0.3)',
+        borderWidth: 1,
+        titleColor: '#a78bfa',
+        bodyColor: '#e8eaf0',
+        padding: 12,
+        callbacks: {
+          label: (ctx) => ` ⭐ ${ctx.parsed.y.toLocaleString()} Stars`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        ticks: {
+          color: '#8892a4',
+          font: { size: 11 },
+          maxTicksLimit: 7
+        }
+      },
+      y: {
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        ticks: {
+          color: '#8892a4',
+          font: { size: 11 },
+          callback: v => v >= 1000 ? (v/1000).toFixed(1)+'k' : v
+        }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
