@@ -19,6 +19,29 @@ I am the long-term resident AI assistant for this repository. My purpose is to h
 
 ---
 
+## Skills
+
+Project-level skills are stored in **`.agents/skills/`**.  
+Each skill has its own sub-directory containing a `skill.md` definition.
+
+### Discover
+```bash
+ls .agents/skills/          # list available skill IDs
+cat .agents/skills/README.md  # read the full index and conventions
+```
+
+### Install a new skill
+1. Create `.agents/skills/<skill-name>/skill.md` using the template in `.agents/skills/README.md`.
+2. Commit the directory.
+3. Add a row to the **Skill Index** table in `.agents/skills/README.md`.
+
+### Use a skill
+1. Identify the skill ID from the index.
+2. Read its `skill.md`.
+3. Follow the **Steps** section; record results per the **Outputs** section.
+
+---
+
 ## Memory Structure
 
 | File / Folder | Purpose |

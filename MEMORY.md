@@ -22,7 +22,9 @@ It stores role definitions, memories, and working artifacts so that context surv
 
 ## Standing Context
 
-*(Add recurring facts, preferences, or project background here as they emerge.)*
+- Project-level skills live in `.agents/skills/<skill-name>/skill.md`.
+- New skills follow the template in `.agents/skills/README.md`.
+- `validate-skills` workflow enforces that every skill directory has a `skill.md`.
 
 ---
 
@@ -30,4 +32,4 @@ It stores role definitions, memories, and working artifacts so that context surv
 
 | Date | Summary |
 |---|---|
-| 2026-04-24 | Initialized workspace: created AGENTS.md and MEMORY.md. |
+| 2026-04-24 | Added `.agents/skills/` skill system: discovery index, `summarize` example skill, `validate-skills` workflow, and Skills section in AGENTS.md. |
