@@ -7,6 +7,11 @@
   <meta name="description" content="AI Guide 是一个精心整理的开源 AI 知识库，涵盖提示词工程、模型评测、工具推荐、学习路径等内容，帮助每个人掌握 AI 时代的核心技能。" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
 
+  <!-- Google Fonts: Plus Jakarta Sans (ui-ux-pro-max skill typography recommendation) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 
@@ -35,8 +40,52 @@
 
     html { scroll-behavior: smooth; }
 
+    /* ============================
+       跳过导航链接（无障碍 - Skip Link）
+       来源：ui-ux-pro-max UX rule: Skip Links / Severity: Medium
+    ============================ */
+    .skip-link {
+      position: absolute;
+      top: -56px;
+      left: 16px;
+      z-index: 10000;
+      padding: 10px 20px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      border-radius: 0 0 10px 10px;
+      transition: top 0.2s ease;
+      white-space: nowrap;
+    }
+    .skip-link:focus { top: 0; outline: 2px solid var(--primary2); outline-offset: 2px; }
+
+    /* ============================
+       键盘焦点环（focus-visible）
+       来源：ui-ux-pro-max UX rule: Keyboard Navigation / Severity: High
+    ============================ */
+    *:focus { outline: none; }
+    *:focus-visible {
+      outline: 2px solid var(--primary2);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    /* ============================
+       减少动画（prefers-reduced-motion）
+       来源：ui-ux-pro-max Pre-Delivery Checklist
+    ============================ */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
     body {
-      font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
+      font-family: 'Plus Jakarta Sans', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.7;
@@ -170,6 +219,44 @@
     .nav-links a:hover {
       color: var(--text);
       background: var(--card);
+    }
+    /* 当前章节高亮（来源：ui-ux-pro-max active state rule）*/
+    .nav-links a.active {
+      color: var(--text);
+      background: rgba(108,99,255,0.12);
+      position: relative;
+    }
+    .nav-links a.active::after {
+      content: '';
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 2px;
+      background: var(--primary2);
+      border-radius: 999px;
+    }
+    /* 移动端展开菜单（CSS class 驱动，而非 inline style）
+       来源：ui-ux-pro-max UX rule: Hover vs Tap / Severity: High */
+    .nav-links.mobile-open {
+      display: flex !important;
+      flex-direction: column;
+      position: absolute;
+      top: 68px;
+      left: 0;
+      right: 0;
+      background: rgba(10,14,26,0.97);
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      gap: 4px;
+      animation: menuSlideDown 0.2s ease both;
+    }
+    @keyframes menuSlideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
     .nav-cta {
       display: flex;
@@ -411,6 +498,7 @@
       flex-direction: column;
     }
     .content-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: rgba(108,99,255,0.25); }
+    .content-card { cursor: pointer; }
     .content-card-banner {
       height: 8px;
     }
@@ -783,7 +871,10 @@
 <body>
 
 <!-- 进度条 -->
-<div id="progress-bar"></div>
+<div id="progress-bar" role="progressbar" aria-hidden="true"></div>
+
+<!-- 跳过导航（无障碍 Skip Link）-->
+<a class="skip-link" href="#hero">跳至主内容</a>
 
 <!-- 背景装饰 -->
 <div class="bg-orbs" aria-hidden="true">
@@ -1366,23 +1457,53 @@ backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smo
 
 /* ============================
    汉堡菜单（移动端）
+   来源：ui-ux-pro-max UX rule: Hover vs Tap（tap events，CSS class 驱动）
 ============================ */
 const hamburger = document.getElementById('hamburger');
 const navLinks = document.getElementById('navLinks');
 
 hamburger.addEventListener('click', () => {
-  const open = navLinks.style.display === 'flex';
-  navLinks.style.display = open ? 'none' : 'flex';
-  navLinks.style.flexDirection = 'column';
-  navLinks.style.position = 'absolute';
-  navLinks.style.top = '68px';
-  navLinks.style.left = '0';
-  navLinks.style.right = '0';
-  navLinks.style.background = 'rgba(10,14,26,0.97)';
-  navLinks.style.padding = '16px 24px';
-  navLinks.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
-  navLinks.style.backdropFilter = 'blur(20px)';
+  const isOpen = navLinks.classList.toggle('mobile-open');
+  hamburger.setAttribute('aria-expanded', isOpen);
 });
+
+// 点击导航链接后收起菜单
+navLinks.addEventListener('click', (e) => {
+  if (e.target.tagName === 'A') {
+    navLinks.classList.remove('mobile-open');
+    hamburger.setAttribute('aria-expanded', 'false');
+  }
+});
+
+// 点击菜单外区域收起
+document.addEventListener('click', (e) => {
+  if (!navbar.contains(e.target)) {
+    navLinks.classList.remove('mobile-open');
+    hamburger.setAttribute('aria-expanded', 'false');
+  }
+});
+
+/* ============================
+   导航链接 Active 滚动高亮（Scroll Spy）
+   来源：ui-ux-pro-max active state rule
+============================ */
+const navAnchors = document.querySelectorAll('.nav-links a[href^="#"]');
+const sections = Array.from(navAnchors)
+  .map(a => document.querySelector(a.getAttribute('href')))
+  .filter(Boolean);
+
+function updateActiveNav() {
+  const scrollMid = window.scrollY + window.innerHeight / 3;
+  let activeId = null;
+  for (const sec of sections) {
+    if (sec.offsetTop <= scrollMid) activeId = sec.id;
+  }
+  navAnchors.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + activeId);
+  });
+}
+window.addEventListener('scroll', updateActiveNav, { passive: true });
+updateActiveNav();
 
 /* ============================
    数字滚动动画

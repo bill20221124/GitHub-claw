@@ -81,3 +81,4 @@ What the agent produces or returns after running this skill.
 | Skill ID   | Purpose |
 |------------|---------|
 | [summarize](./summarize/skill.md) | Summarize a file, PR, or issue into a concise set of bullet points. |
+| [ui-ux-pro-max](./ui-ux-pro-max/skill.md) | AI-powered design intelligence: 67 styles, 161 color palettes, 57 font pairings, 99 UX guidelines, 25 chart types across 16 stacks. Installed via `uipro-cli`. |

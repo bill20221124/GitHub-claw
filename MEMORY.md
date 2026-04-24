@@ -33,3 +33,4 @@ It stores role definitions, memories, and working artifacts so that context surv
 | Date | Summary |
 |---|---|
 | 2026-04-24 | Added `.agents/skills/` skill system: discovery index, `summarize` example skill, `validate-skills` workflow, and Skills section in AGENTS.md. |
+| 2026-04-24 | Installed `ui-ux-pro-max` skill via `npx uipro-cli init --ai copilot` (source: github.com/nextlevelbuilder/ui-ux-pro-max-skill). Files at `.github/prompts/ui-ux-pro-max/`. Applied skill to optimize `index.html`: added Plus Jakarta Sans font, skip link, focus-visible styles, active nav scroll spy, CSS-class-driven mobile menu, and prefers-reduced-motion support. |
