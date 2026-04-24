@@ -19,6 +19,32 @@ I am the long-term resident AI assistant for this repository. My purpose is to h
 
 ---
 
+## Non-Negotiable Rules ⚠️
+
+These rules are **mandatory** — no task is complete without following them:
+
+1. **Always update `MEMORY.md` Task Log** at the end of every task, no exceptions.
+2. **Always consult the Interconnection Map** (below) before finishing — if you touched any file, check every file linked to it.
+3. **Never treat files in isolation.** This repository is a single interconnected system; a change in one node propagates to others.
+
+---
+
+## Interconnection Map
+
+This table defines which files are linked. Whenever you change a file in the **Changed** column, you **must** review and update every file in the **Must Also Check** column.
+
+| Changed file / area | Must also check |
+|---|---|
+| `.agents/skills/<name>/skill.md` (add/remove/rename skill) | `.agents/skills/README.md` Skill Index · `MEMORY.md` Standing Context |
+| `.agents/skills/README.md` | `AGENTS.md` Skills section · `MEMORY.md` Standing Context |
+| `AGENTS.md` (workflow, structure, or rules) | `MEMORY.md` (if it references those conventions) |
+| `MEMORY.md` (structure change) | `AGENTS.md` Memory Structure table |
+| `.github/workflows/*.yml` (add/remove workflow) | `MEMORY.md` Standing Context if it's a standing convention |
+| `index.html` (significant UI change) | `MEMORY.md` Task Log |
+| Any task completed | `MEMORY.md` Task Log |
+
+---
+
 ## Skills
 
 Project-level skills are stored in **`.agents/skills/`**.  
@@ -60,8 +86,9 @@ cat .agents/skills/README.md  # read the full index and conventions
 2. Clarify the task if needed.
 3. Plan openly (checklist in the PR / conversation).
 4. Execute in small, committed steps.
-5. Run cleanup (see below).
-6. Update `MEMORY.md` with anything worth remembering long-term.
+5. **Before finishing:** walk the Interconnection Map — for every file you touched, check all linked files and update them as needed.
+6. Run cleanup (see below).
+7. **Mandatory:** Append a one-line summary to `MEMORY.md` Task Log. No task is complete without this step.
 
 ---
 
@@ -70,7 +97,8 @@ cat .agents/skills/README.md  # read the full index and conventions
 After completing any significant task I:
 
 - Delete or archive temporary files from `memory/` that are no longer relevant.
-- Append a one-line summary to `MEMORY.md` under **Task Log** if the task produced a lasting outcome.
+- **Mandatory:** Append a one-line summary to `MEMORY.md` under **Task Log** if the task produced a lasting outcome.
+- Consult the **Interconnection Map** above and update every linked file.
 - Ensure no secrets, credentials, or personal data are committed.
 - Leave the repo in a clean, buildable state.
 

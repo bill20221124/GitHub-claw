@@ -10,6 +10,7 @@
 - Prefer concise, practical files over elaborate documentation.
 - Keep the workspace lightweight and scalable.
 - Separate long-term memories from temporary task notes.
+- **Always update `MEMORY.md` and check the Interconnection Map after every task — no exceptions.** Failure to do so is a critical workflow error.
 
 ---
 
@@ -28,9 +29,26 @@ It stores role definitions, memories, and working artifacts so that context surv
 
 ---
 
+## Known Interconnections
+
+The following files are linked — changing one requires checking the others:
+
+| Changed | Must also check |
+|---|---|
+| `.agents/skills/<name>/skill.md` (add/remove/rename) | `.agents/skills/README.md` Skill Index · `MEMORY.md` Standing Context |
+| `.agents/skills/README.md` | `AGENTS.md` Skills section · `MEMORY.md` Standing Context |
+| `AGENTS.md` (workflow or structure) | `MEMORY.md` (if it references those conventions) |
+| `MEMORY.md` (structure change) | `AGENTS.md` Memory Structure table |
+| `.github/workflows/*.yml` (add/remove) | `MEMORY.md` Standing Context |
+| `index.html` (significant UI change) | `MEMORY.md` Task Log |
+| Any task completed | `MEMORY.md` Task Log |
+
+---
+
 ## Task Log
 
 | Date | Summary |
 |---|---|
 | 2026-04-24 | Added `.agents/skills/` skill system: discovery index, `summarize` example skill, `validate-skills` workflow, and Skills section in AGENTS.md. |
 | 2026-04-24 | Installed `ui-ux-pro-max` skill via `npx uipro-cli init --ai copilot` (source: github.com/nextlevelbuilder/ui-ux-pro-max-skill). Files at `.github/prompts/ui-ux-pro-max/`. Applied skill to optimize `index.html`: added Plus Jakarta Sans font, skip link, focus-visible styles, active nav scroll spy, CSS-class-driven mobile menu, and prefers-reduced-motion support. |
+| 2026-04-24 | Systemic fix: added Non-Negotiable Rules + Interconnection Map to `AGENTS.md`; added Known Interconnections section and owner preference for mandatory memory updates to `MEMORY.md`. Enforces that every future task updates memory and cascades changes. |
