@@ -1,0 +1,51 @@
+# Validates that every directory under .agents/skills/ contains a skill.md file.
+name: Validate Skills
+
+on:
+  push:
+    paths:
+      - '.agents/skills/**'
+  pull_request:
+    paths:
+      - '.agents/skills/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check each skill directory has a skill.md
+        shell: bash
+        run: |
+          errors=0
+          skills_dir=".agents/skills"
+
+          if [ ! -d "$skills_dir" ]; then
+            echo "No $skills_dir directory found — skipping."
+            exit 0
+          fi
+
+          for skill_dir in "$skills_dir"/*/; do
+            skill_name=$(basename "$skill_dir")
+            skill_file="$skill_dir/skill.md"
+            if [ ! -f "$skill_file" ]; then
+              echo "ERROR: '$skill_name' is missing skill.md"
+              errors=$((errors + 1))
+            else
+              echo "OK: $skill_name"
+            fi
+          done
+
+          if [ "$errors" -gt 0 ]; then
+            echo ""
+            echo "$errors skill directory/directories are missing skill.md."
+            exit 1
+          fi
+
+          echo "All skills are valid."
