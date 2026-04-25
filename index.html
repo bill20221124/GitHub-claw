@@ -3,17 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Guide — 你的 AI 知识宝典</title>
-  <meta name="description" content="AI Guide 是一个精心整理的开源 AI 知识库，涵盖提示词工程、模型评测、工具推荐、学习路径等内容，帮助每个人掌握 AI 时代的核心技能。" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
+  <title>AI Chat — 你的智能对话助手</title>
+  <meta name="description" content="AI Chat 是一个开放的 AI 对话平台，支持 OpenAI 及兼容接口，流式输出、Markdown 渲染、代码高亮，开箱即用。" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>" />
 
   <!-- Google Fonts: Plus Jakarta Sans (ui-ux-pro-max skill typography recommendation) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <!-- Highlight.js (code syntax highlighting in AI responses) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
+
+  <!-- marked.js (markdown rendering for AI responses) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+
+  <!-- DOMPurify (sanitize AI-generated HTML before inserting into DOM) -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js"></script>
 
   <style>
     /* ============================
@@ -34,47 +41,33 @@
       --radius-lg: 24px;
       --shadow: 0 8px 32px rgba(0,0,0,0.4);
       --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+      --chat-max: 860px;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html { scroll-behavior: smooth; }
 
-    /* ============================
-       跳过导航链接（无障碍 - Skip Link）
-       来源：ui-ux-pro-max UX rule: Skip Links / Severity: Medium
-    ============================ */
+    /* Skip Link (ui-ux-pro-max UX rule: Skip Links / Severity: Medium) */
     .skip-link {
       position: absolute;
-      top: -56px;
-      left: 16px;
+      top: -56px; left: 16px;
       z-index: 10000;
       padding: 10px 20px;
       background: var(--primary);
       color: #fff;
-      font-weight: 700;
-      font-size: 14px;
+      font-weight: 700; font-size: 14px;
       border-radius: 0 0 10px 10px;
       transition: top 0.2s ease;
       white-space: nowrap;
     }
     .skip-link:focus { top: 0; outline: 2px solid var(--primary2); outline-offset: 2px; }
 
-    /* ============================
-       键盘焦点环（focus-visible）
-       来源：ui-ux-pro-max UX rule: Keyboard Navigation / Severity: High
-    ============================ */
+    /* Focus visible (ui-ux-pro-max Keyboard Navigation / Severity: High) */
     *:focus { outline: none; }
-    *:focus-visible {
-      outline: 2px solid var(--primary2);
-      outline-offset: 3px;
-      border-radius: 4px;
-    }
+    *:focus-visible { outline: 2px solid var(--primary2); outline-offset: 3px; border-radius: 4px; }
 
-    /* ============================
-       减少动画（prefers-reduced-motion）
-       来源：ui-ux-pro-max Pre-Delivery Checklist
-    ============================ */
+    /* prefers-reduced-motion (ui-ux-pro-max Pre-Delivery Checklist) */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -93,24 +86,19 @@
     }
 
     a { color: inherit; text-decoration: none; }
-
     img { max-width: 100%; }
+    button { font-family: inherit; cursor: pointer; }
 
     /* ============================
        背景装饰
     ============================ */
     .bg-orbs {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0; overflow: hidden;
     }
     .bg-orbs span {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      opacity: 0.15;
+      position: absolute; border-radius: 50%;
+      filter: blur(80px); opacity: 0.12;
       animation: drift 20s ease-in-out infinite alternate;
     }
     .bg-orbs span:nth-child(1) { width: 600px; height: 600px; background: var(--primary); top: -200px; left: -200px; animation-delay: 0s; }
@@ -124,631 +112,439 @@
     /* ============================
        布局容器
     ============================ */
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 24px;
-      position: relative;
-      z-index: 1;
-    }
-
-    section { padding: 96px 0; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    section { padding: 80px 0; }
 
     .section-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--primary2);
-      padding: 6px 14px;
-      border: 1px solid rgba(0,212,255,0.2);
-      border-radius: 999px;
-      background: rgba(0,212,255,0.06);
-      margin-bottom: 20px;
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--primary2);
+      padding: 6px 14px; border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 999px; background: rgba(0,212,255,0.06); margin-bottom: 20px;
     }
-
     .section-title {
-      font-size: clamp(28px, 4vw, 48px);
-      font-weight: 800;
-      line-height: 1.2;
-      margin-bottom: 16px;
+      font-size: clamp(28px, 4vw, 48px); font-weight: 800; line-height: 1.2; margin-bottom: 16px;
       background: linear-gradient(135deg, #fff 0%, #a0aabf 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-
-    .section-desc {
-      font-size: 17px;
-      color: var(--text-muted);
-      max-width: 560px;
-    }
+    .section-desc { font-size: 17px; color: var(--text-muted); max-width: 560px; }
 
     /* ============================
        导航栏
     ============================ */
     #navbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 1000;
-      transition: var(--transition);
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 1000; transition: var(--transition);
     }
     #navbar.scrolled {
-      background: rgba(10,14,26,0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: rgba(10,14,26,0.9);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--card-border);
     }
     .nav-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 68px;
+      display: flex; align-items: center; justify-content: space-between; height: 68px;
     }
-    .nav-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 20px;
-      font-weight: 800;
-    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 800; }
     .nav-logo .emoji { font-size: 26px; }
     .nav-logo .gradient-text {
       background: linear-gradient(135deg, var(--primary), var(--primary2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      list-style: none;
-    }
+    .nav-links { display: flex; align-items: center; gap: 8px; list-style: none; }
     .nav-links a {
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text-muted);
-      transition: var(--transition);
+      padding: 8px 16px; border-radius: 8px;
+      font-size: 14px; font-weight: 500; color: var(--text-muted); transition: var(--transition);
     }
-    .nav-links a:hover {
-      color: var(--text);
-      background: var(--card);
-    }
-    /* 当前章节高亮（来源：ui-ux-pro-max active state rule）*/
+    .nav-links a:hover { color: var(--text); background: var(--card); }
     .nav-links a.active {
-      color: var(--text);
-      background: rgba(108,99,255,0.12);
-      position: relative;
+      color: var(--text); background: rgba(108,99,255,0.12); position: relative;
     }
     .nav-links a.active::after {
-      content: '';
-      position: absolute;
-      bottom: 4px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 14px;
-      height: 2px;
-      background: var(--primary2);
-      border-radius: 999px;
+      content: ''; position: absolute; bottom: 4px; left: 50%;
+      transform: translateX(-50%); width: 14px; height: 2px;
+      background: var(--primary2); border-radius: 999px;
     }
-    /* 移动端展开菜单（CSS class 驱动，而非 inline style）
-       来源：ui-ux-pro-max UX rule: Hover vs Tap / Severity: High */
     .nav-links.mobile-open {
-      display: flex !important;
-      flex-direction: column;
-      position: absolute;
-      top: 68px;
-      left: 0;
-      right: 0;
-      background: rgba(10,14,26,0.97);
-      padding: 16px 24px;
+      display: flex !important; flex-direction: column;
+      position: absolute; top: 68px; left: 0; right: 0;
+      background: rgba(10,14,26,0.97); padding: 16px 24px;
       border-bottom: 1px solid rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      gap: 4px;
-      animation: menuSlideDown 0.2s ease both;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      gap: 4px; animation: menuSlideDown 0.2s ease both;
     }
     @keyframes menuSlideDown {
       from { opacity: 0; transform: translateY(-6px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .nav-cta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .nav-settings-btn {
+      display: inline-flex; align-items: center; gap: 8px;
       padding: 9px 20px !important;
       background: linear-gradient(135deg, var(--primary), var(--primary2)) !important;
-      color: white !important;
-      border-radius: 10px !important;
-      font-weight: 600 !important;
-      transition: var(--transition) !important;
-      box-shadow: 0 0 20px rgba(108,99,255,0.3);
+      color: white !important; border-radius: 10px !important;
+      font-weight: 600 !important; transition: var(--transition) !important;
+      box-shadow: 0 0 20px rgba(108,99,255,0.3); border: none; font-size: 14px;
     }
-    .nav-cta:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 0 30px rgba(108,99,255,0.5) !important;
-    }
+    .nav-settings-btn:hover { transform: translateY(-1px); box-shadow: 0 0 30px rgba(108,99,255,0.5) !important; }
     .hamburger {
-      display: none;
-      flex-direction: column;
-      gap: 5px;
-      cursor: pointer;
-      padding: 8px;
+      display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 8px;
+      background: none; border: none;
     }
     .hamburger span {
-      display: block;
-      width: 22px;
-      height: 2px;
-      background: var(--text);
-      border-radius: 2px;
-      transition: var(--transition);
+      display: block; width: 22px; height: 2px;
+      background: var(--text); border-radius: 2px; transition: var(--transition);
     }
+
+    /* ============================
+       按钮
+    ============================ */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color: white; border-radius: 12px; font-weight: 700; font-size: 15px;
+      transition: var(--transition); box-shadow: 0 0 30px rgba(108,99,255,0.35);
+      border: none; position: relative; overflow: hidden;
+    }
+    .btn-primary::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      opacity: 0; transition: var(--transition);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 45px rgba(108,99,255,0.55); }
+    .btn-primary:hover::after { opacity: 1; }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; background: var(--card); color: var(--text);
+      border: 1px solid var(--card-border); border-radius: 12px;
+      font-weight: 600; font-size: 15px; transition: var(--transition); backdrop-filter: blur(10px);
+    }
+    .btn-secondary:hover { background: var(--card-hover); border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
 
     /* ============================
        Hero
     ============================ */
     #hero {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      padding-top: 68px;
-      position: relative;
+      min-height: 100vh; display: flex; align-items: center;
+      padding-top: 68px; position: relative;
     }
-    .hero-content {
-      max-width: 760px;
-    }
+    .hero-content { max-width: 700px; }
     .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      border-radius: 999px;
-      background: rgba(108,99,255,0.1);
-      border: 1px solid rgba(108,99,255,0.25);
-      font-size: 13px;
-      color: var(--primary2);
-      font-weight: 600;
-      margin-bottom: 32px;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 999px;
+      background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.25);
+      font-size: 13px; color: var(--primary2); font-weight: 600; margin-bottom: 32px;
       animation: fadeUp 0.6s ease both;
     }
     .hero-badge .dot {
-      width: 6px; height: 6px;
-      background: #22c55e;
-      border-radius: 50%;
-      box-shadow: 0 0 6px #22c55e;
-      animation: pulse 2s infinite;
+      width: 6px; height: 6px; background: #22c55e; border-radius: 50%;
+      box-shadow: 0 0 6px #22c55e; animation: pulse 2s infinite;
     }
     @keyframes pulse {
       0%,100% { opacity:1; transform:scale(1); }
       50% { opacity:0.6; transform:scale(1.3); }
     }
     .hero-title {
-      font-size: clamp(40px, 6vw, 80px);
-      font-weight: 900;
-      line-height: 1.1;
-      margin-bottom: 24px;
+      font-size: clamp(40px, 6vw, 76px); font-weight: 900; line-height: 1.1; margin-bottom: 24px;
       animation: fadeUp 0.6s 0.1s ease both;
     }
     .hero-title .line1 { display: block; color: #fff; }
     .hero-title .gradient-text {
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary2) 50%, var(--accent) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
     .hero-desc {
-      font-size: 18px;
-      color: var(--text-muted);
-      margin-bottom: 40px;
-      max-width: 560px;
+      font-size: 18px; color: var(--text-muted); margin-bottom: 40px; max-width: 560px;
       animation: fadeUp 0.6s 0.2s ease both;
     }
     .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      margin-bottom: 56px;
+      display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 56px;
       animation: fadeUp 0.6s 0.3s ease both;
     }
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 28px;
-      background: linear-gradient(135deg, var(--primary), var(--primary2));
-      color: white;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 15px;
-      transition: var(--transition);
-      box-shadow: 0 0 30px rgba(108,99,255,0.35);
-      position: relative;
-      overflow: hidden;
-    }
-    .btn-primary::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
-      opacity: 0;
-      transition: var(--transition);
-    }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 45px rgba(108,99,255,0.55); }
-    .btn-primary:hover::after { opacity: 1; }
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 28px;
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      font-weight: 600;
-      font-size: 15px;
-      transition: var(--transition);
-      backdrop-filter: blur(10px);
-    }
-    .btn-secondary:hover { background: var(--card-hover); border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
-
-    .hero-stats {
-      display: flex;
-      gap: 40px;
+    .hero-chips {
+      display: flex; flex-wrap: wrap; gap: 10px;
       animation: fadeUp 0.6s 0.4s ease both;
     }
-    .stat-item { text-align: center; }
-    .stat-value {
-      font-size: 32px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--primary2), var(--primary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    .hero-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 999px;
+      border: 1px solid var(--card-border); background: var(--card);
+      font-size: 13px; color: var(--text-muted); font-weight: 500;
     }
-    .stat-label { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-
+    .hero-chip .chip-dot { width: 5px; height: 5px; border-radius: 50%; }
     .hero-visual {
-      position: absolute;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 420px;
-      pointer-events: none;
-      animation: float 6s ease-in-out infinite;
+      position: absolute; right: 0; top: 50%;
+      transform: translateY(-50%); width: 400px;
+      pointer-events: none; animation: float 6s ease-in-out infinite;
     }
     @keyframes float {
       0%,100% { transform: translateY(-50%) translateX(0); }
       50% { transform: translateY(-52%) translateX(-8px); }
     }
-
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(24px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
     /* ============================
-       特性 Cards
+       AI 对话区
     ============================ */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-      margin-top: 64px;
+    #chat { background: var(--bg2); padding: 80px 0; }
+    .chat-wrapper {
+      max-width: var(--chat-max);
+      margin: 0 auto;
     }
-    .feature-card {
-      padding: 32px;
+    .chat-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .chat-model-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 999px;
+      background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.2);
+      font-size: 13px; color: var(--primary2); font-weight: 600;
+    }
+    .chat-model-badge .model-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+      box-shadow: 0 0 6px #22c55e;
+    }
+    .chat-actions { display: flex; gap: 8px; }
+    .chat-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      background: var(--card); border: 1px solid var(--card-border);
+      color: var(--text-muted); transition: var(--transition);
+    }
+    .chat-btn:hover { background: var(--card-hover); color: var(--text); border-color: rgba(255,255,255,0.15); }
+    .chat-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* 消息区 */
+    .chat-messages {
       background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: var(--radius-lg);
-      transition: var(--transition);
+      height: 480px; overflow-y: auto;
+      padding: 24px; display: flex; flex-direction: column; gap: 20px;
+      scroll-behavior: smooth;
+      /* 滚动条样式 */
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
+    }
+    .chat-messages::-webkit-scrollbar { width: 6px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+    /* 欢迎提示 */
+    .chat-welcome {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; text-align: center; gap: 12px; color: var(--text-muted);
+    }
+    .chat-welcome-icon { font-size: 48px; margin-bottom: 8px; }
+    .chat-welcome h3 { font-size: 18px; font-weight: 700; color: var(--text); }
+    .chat-welcome p { font-size: 14px; max-width: 360px; }
+
+    /* 消息气泡 */
+    .msg { display: flex; gap: 12px; max-width: 100%; }
+    .msg.user { flex-direction: row-reverse; }
+    .msg-avatar {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; flex-shrink: 0; align-self: flex-start;
+    }
+    .msg.user .msg-avatar { background: linear-gradient(135deg, var(--primary), var(--primary2)); }
+    .msg.assistant .msg-avatar { background: rgba(255,255,255,0.06); border: 1px solid var(--card-border); }
+    .msg-body { display: flex; flex-direction: column; gap: 4px; max-width: calc(100% - 60px); }
+    .msg.user .msg-body { align-items: flex-end; }
+    .msg-name { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+    .msg-bubble {
+      padding: 12px 16px; border-radius: 16px;
+      font-size: 14px; line-height: 1.65;
       position: relative;
-      overflow: hidden;
-      cursor: default;
+    }
+    .msg.user .msg-bubble {
+      background: linear-gradient(135deg, rgba(108,99,255,0.25), rgba(0,212,255,0.15));
+      border: 1px solid rgba(108,99,255,0.3);
+      border-top-right-radius: 4px; color: var(--text);
+    }
+    .msg.assistant .msg-bubble {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--card-border);
+      border-top-left-radius: 4px; color: var(--text);
+    }
+    /* Markdown 渲染 */
+    .msg-bubble p { margin-bottom: 0.75em; }
+    .msg-bubble p:last-child { margin-bottom: 0; }
+    .msg-bubble h1,.msg-bubble h2,.msg-bubble h3,.msg-bubble h4 {
+      margin: 1em 0 0.5em; font-weight: 700;
+    }
+    .msg-bubble ul,.msg-bubble ol { padding-left: 1.5em; margin-bottom: 0.75em; }
+    .msg-bubble li { margin-bottom: 0.25em; }
+    .msg-bubble code:not(pre code) {
+      background: rgba(108,99,255,0.15); color: #a78bfa;
+      padding: 1px 6px; border-radius: 4px; font-size: 0.9em;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .msg-bubble pre {
+      margin: 0.75em 0; border-radius: 10px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .msg-bubble pre code {
+      display: block; padding: 16px; font-size: 13px; overflow-x: auto;
+    }
+    .msg-bubble table { width: 100%; border-collapse: collapse; margin-bottom: 0.75em; font-size: 13px; }
+    .msg-bubble th { background: rgba(108,99,255,0.12); padding: 8px 12px; text-align: left; font-weight: 600; }
+    .msg-bubble td { padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .msg-bubble blockquote {
+      border-left: 3px solid var(--primary); padding-left: 12px;
+      color: var(--text-muted); margin: 0.75em 0;
+    }
+    .msg-bubble a { color: var(--primary2); text-decoration: underline; text-decoration-color: rgba(0,212,255,0.4); }
+    .msg-meta { font-size: 11px; color: var(--text-muted); display: flex; gap: 8px; align-items: center; }
+    .msg-copy-btn {
+      background: none; border: none; color: var(--text-muted); font-size: 11px;
+      cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: var(--transition);
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .msg-copy-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+    /* 打字指示器 */
+    .typing-indicator {
+      display: flex; gap: 12px; max-width: 100%; align-items: flex-end;
+    }
+    .typing-dots {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--card-border);
+      border-radius: 16px; border-top-left-radius: 4px;
+      padding: 14px 18px; display: flex; gap: 5px; align-items: center;
+    }
+    .typing-dots span {
+      width: 6px; height: 6px; background: var(--text-muted); border-radius: 50%;
+      animation: typingBounce 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce {
+      0%,60%,100% { transform: translateY(0); opacity: 0.5; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* 错误消息 */
+    .chat-error {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 16px; border-radius: 12px;
+      background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2);
+      font-size: 14px; color: #fca5a5;
+    }
+    .chat-error svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+
+    /* 输入区 */
+    .chat-input-area {
+      margin-top: 16px;
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg); padding: 16px;
+      transition: var(--transition);
+    }
+    .chat-input-area:focus-within { border-color: rgba(108,99,255,0.4); box-shadow: 0 0 0 3px rgba(108,99,255,0.08); }
+    .chat-input-row { display: flex; gap: 12px; align-items: flex-end; }
+    #chatInput {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-size: 15px; font-family: inherit; line-height: 1.6;
+      resize: none; min-height: 24px; max-height: 180px; overflow-y: auto;
+      scrollbar-width: thin;
+    }
+    #chatInput::placeholder { color: var(--text-muted); }
+    .send-btn {
+      width: 40px; height: 40px; border-radius: 10px; border: none; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color: white; display: flex; align-items: center; justify-content: center;
+      transition: var(--transition); box-shadow: 0 0 16px rgba(108,99,255,0.3);
+    }
+    .send-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 0 24px rgba(108,99,255,0.5); }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .send-btn svg { width: 18px; height: 18px; }
+    .chat-input-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 10px; font-size: 12px; color: var(--text-muted);
+    }
+    .chat-hint { display: flex; gap: 16px; }
+    .chat-hint kbd {
+      display: inline-flex; align-items: center;
+      padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05);
+      font-family: inherit;
+    }
+    #charCount { color: var(--text-muted); }
+
+    /* ============================
+       特性区
+    ============================ */
+    #features { background: var(--bg); }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px; margin-top: 56px;
+    }
+    .feature-card {
+      padding: 32px; background: var(--card); border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg); transition: var(--transition);
+      position: relative; overflow: hidden; cursor: default;
     }
     .feature-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
+      content: ''; position: absolute; inset: 0;
       background: linear-gradient(135deg, rgba(108,99,255,0.08), transparent);
-      opacity: 0;
-      transition: var(--transition);
+      opacity: 0; transition: var(--transition);
     }
     .feature-card:hover { transform: translateY(-4px); border-color: rgba(108,99,255,0.3); box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(108,99,255,0.2); }
     .feature-card:hover::before { opacity: 1; }
     .feature-icon {
-      width: 52px; height: 52px;
-      border-radius: 14px;
+      width: 52px; height: 52px; border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 26px;
-      margin-bottom: 20px;
+      font-size: 24px; margin-bottom: 20px;
     }
     .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
     .feature-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
 
     /* ============================
-       精选内容
+       快速开始
     ============================ */
-    #content { background: var(--bg2); }
-    .content-header {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-bottom: 48px;
-      flex-wrap: wrap;
-      gap: 16px;
+    #quickstart { background: var(--bg2); }
+    .steps {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px; margin-top: 56px;
     }
-    .content-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 24px;
-    }
-    .content-card {
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      transition: var(--transition);
-      display: flex;
-      flex-direction: column;
-    }
-    .content-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: rgba(108,99,255,0.25); }
-    .content-card { cursor: pointer; }
-    .content-card-banner {
-      height: 8px;
-    }
-    .content-card-body { padding: 28px; flex: 1; display: flex; flex-direction: column; }
-    .content-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-    .tag {
-      padding: 3px 10px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .content-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
-    .content-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; flex: 1; }
-    .content-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--card-border); }
-    .meta-info { font-size: 12px; color: var(--text-muted); }
-    .link-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--primary2);
+    .step-card {
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg); padding: 32px; position: relative;
       transition: var(--transition);
     }
-    .link-btn:hover { gap: 10px; }
-
-    /* ============================
-       路线图
-    ============================ */
-    #roadmap { background: var(--bg); }
-    .roadmap-phases {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
-      margin-top: 56px;
-      position: relative;
-    }
-    .roadmap-phases::before {
-      content: '';
-      position: absolute;
-      top: 36px;
-      left: 60px;
-      right: 60px;
-      height: 2px;
-      background: linear-gradient(90deg, var(--primary), var(--primary2), var(--accent));
-      opacity: 0.3;
-      display: none;
-    }
-    .phase-card {
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg);
-      padding: 32px;
-      position: relative;
-      transition: var(--transition);
-    }
-    .phase-card:hover { border-color: rgba(108,99,255,0.3); transform: translateY(-2px); }
-    .phase-num {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      color: var(--primary2);
-      margin-bottom: 12px;
-      text-transform: uppercase;
-    }
-    .phase-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-    .phase-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 600;
+    .step-card:hover { border-color: rgba(108,99,255,0.3); transform: translateY(-2px); }
+    .step-num {
+      font-size: 48px; font-weight: 900; line-height: 1;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
       margin-bottom: 16px;
     }
-    .status-done { background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
-    .status-wip  { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
-    .status-plan { background: rgba(148,163,184,0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.15); }
-    .phase-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-    .phase-list li {
-      display: flex; align-items: flex-start; gap: 10px;
-      font-size: 14px; color: var(--text-muted);
-    }
-    .phase-list li::before { content: '›'; color: var(--primary); font-weight: 800; margin-top: 1px; }
-    .phase-progress {
-      margin-top: 20px;
-      height: 4px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-    .phase-progress-bar {
-      height: 100%;
-      border-radius: 999px;
-      background: linear-gradient(90deg, var(--primary), var(--primary2));
-      transition: width 1.5s cubic-bezier(0.4,0,0.2,1);
+    .step-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .step-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+    .step-tag {
+      display: inline-flex; padding: 4px 12px; border-radius: 999px;
+      font-size: 12px; font-weight: 600; margin-top: 12px;
     }
 
     /* ============================
-       更新日志
+       CTA
     ============================ */
-    #changelog { background: var(--bg2); }
-    .changelog-wrap { max-width: 780px; margin: 56px auto 0; }
-    .changelog-item {
-      display: grid;
-      grid-template-columns: 110px 1fr;
-      gap: 32px;
-      position: relative;
-      padding-bottom: 48px;
-    }
-    .changelog-item:last-child { padding-bottom: 0; }
-    .changelog-item::after {
-      content: '';
-      position: absolute;
-      left: 109px;
-      top: 8px;
-      bottom: 0;
-      width: 1px;
-      background: linear-gradient(180deg, rgba(108,99,255,0.4), transparent);
-    }
-    .changelog-item:last-child::after { display: none; }
-    .changelog-date {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      padding-top: 2px;
-      text-align: right;
-    }
-    .changelog-dot {
-      position: absolute;
-      left: 103px;
-      top: 5px;
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary), var(--primary2));
-      box-shadow: 0 0 12px rgba(108,99,255,0.5);
-      z-index: 1;
-    }
-    .changelog-content {
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      padding: 24px;
-      transition: var(--transition);
-    }
-    .changelog-content:hover { border-color: rgba(108,99,255,0.25); }
-    .changelog-version {
-      display: inline-flex; align-items: center; gap: 8px;
-      margin-bottom: 10px;
-    }
-    .version-tag {
-      font-size: 13px; font-weight: 700;
-      padding: 3px 10px; border-radius: 6px;
-      background: rgba(108,99,255,0.15); color: var(--primary);
-    }
-    .changelog-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
-    .changelog-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-    .changelog-list li {
-      display: flex; align-items: flex-start; gap: 8px;
-      font-size: 14px; color: var(--text-muted);
-    }
-    .changelog-list .badge {
-      flex-shrink: 0;
-      padding: 1px 8px; border-radius: 4px;
-      font-size: 11px; font-weight: 600;
-      text-transform: uppercase;
-    }
-    .badge-new   { background: rgba(34,197,94,0.15); color: #22c55e; }
-    .badge-fix   { background: rgba(251,191,36,0.15); color: #fbbf24; }
-    .badge-imp   { background: rgba(108,99,255,0.15); color: var(--primary); }
-    .badge-docs  { background: rgba(0,212,255,0.15); color: var(--primary2); }
-
-    /* ============================
-       增长趋势
-    ============================ */
-    #growth { background: var(--bg); }
-    .growth-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 40px;
-      margin-top: 56px;
-      align-items: center;
-    }
-    .growth-chart-wrap {
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg);
-      padding: 32px;
-      position: relative;
-    }
-    .growth-chart-title { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 20px; }
-    .growth-chart-wrap canvas { display: block; }
-    .growth-stats { display: flex; flex-direction: column; gap: 24px; }
-    .growth-stat-card {
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      padding: 24px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      transition: var(--transition);
-    }
-    .growth-stat-card:hover { border-color: rgba(108,99,255,0.3); transform: translateX(4px); }
-    .gstat-icon {
-      width: 48px; height: 48px;
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
-    }
-    .gstat-value { font-size: 28px; font-weight: 800; }
-    .gstat-label { font-size: 13px; color: var(--text-muted); }
-    .gstat-trend { margin-left: auto; font-size: 13px; font-weight: 700; }
-    .trend-up   { color: #22c55e; }
-    .trend-down { color: #f87171; }
-
-    /* ============================
-       贡献 / CTA
-    ============================ */
-    #cta { background: var(--bg2); }
+    #cta { background: var(--bg); }
     .cta-box {
       background: linear-gradient(135deg, rgba(108,99,255,0.12) 0%, rgba(0,212,255,0.08) 100%);
-      border: 1px solid rgba(108,99,255,0.25);
-      border-radius: 32px;
-      padding: 80px 60px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
+      border: 1px solid rgba(108,99,255,0.25); border-radius: 32px; padding: 80px 60px;
+      text-align: center; position: relative; overflow: hidden;
     }
     .cta-box::before {
-      content: '';
-      position: absolute;
-      width: 400px; height: 400px;
-      border-radius: 50%;
+      content: ''; position: absolute; width: 400px; height: 400px; border-radius: 50%;
       background: radial-gradient(circle, rgba(108,99,255,0.15) 0%, transparent 70%);
-      top: -100px; left: -100px;
-      pointer-events: none;
+      top: -100px; left: -100px; pointer-events: none;
     }
     .cta-box::after {
-      content: '';
-      position: absolute;
-      width: 300px; height: 300px;
-      border-radius: 50%;
+      content: ''; position: absolute; width: 300px; height: 300px; border-radius: 50%;
       background: radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 70%);
-      bottom: -80px; right: -80px;
-      pointer-events: none;
+      bottom: -80px; right: -80px; pointer-events: none;
     }
     .cta-box h2 { font-size: clamp(26px, 3.5vw, 42px); font-weight: 800; margin-bottom: 16px; color: #fff; }
     .cta-box p { font-size: 16px; color: var(--text-muted); margin-bottom: 40px; max-width: 480px; margin-left: auto; margin-right: auto; }
@@ -758,16 +554,11 @@
        页脚
     ============================ */
     footer {
-      background: var(--bg);
-      border-top: 1px solid var(--card-border);
-      padding: 48px 0;
+      background: var(--bg); border-top: 1px solid var(--card-border); padding: 48px 0;
     }
     .footer-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 24px;
     }
     .footer-logo { font-size: 18px; font-weight: 800; }
     .footer-links { display: flex; gap: 24px; }
@@ -776,96 +567,135 @@
     .footer-copy { font-size: 13px; color: var(--text-muted); }
 
     /* ============================
-       滚动动画
+       滚动显现动画
     ============================ */
-    .reveal {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.7s ease, transform 0.7s ease;
-    }
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* ============================
-       GitHub stars 按钮
-    ============================ */
-    .github-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      transition: var(--transition);
-    }
-    .github-btn:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.2); }
-    .github-btn svg { width: 16px; height: 16px; fill: currentColor; }
-
-    /* ============================
-       响应式
-    ============================ */
-    @media (max-width: 900px) {
-      .hero-visual { display: none; }
-      .growth-layout { grid-template-columns: 1fr; }
-      .changelog-item { grid-template-columns: 80px 1fr; gap: 20px; }
-      .changelog-item::after { left: 79px; }
-      .changelog-dot { left: 73px; }
-    }
-    @media (max-width: 700px) {
-      section { padding: 64px 0; }
-      .nav-links { display: none; }
-      .hamburger { display: flex; }
-      .hero-stats { gap: 24px; }
-      .cta-box { padding: 48px 28px; }
-      .footer-inner { flex-direction: column; align-items: flex-start; }
-    }
-    @media (max-width: 480px) {
-      .changelog-item { grid-template-columns: 1fr; }
-      .changelog-date { text-align: left; font-size: 12px; }
-      .changelog-item::after { display: none; }
-      .changelog-dot { display: none; }
-    }
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
 
     /* ============================
        顶部进度条
     ============================ */
     #progress-bar {
-      position: fixed;
-      top: 0; left: 0;
-      height: 3px;
+      position: fixed; top: 0; left: 0; height: 3px;
       background: linear-gradient(90deg, var(--primary), var(--primary2), var(--accent));
-      z-index: 9999;
-      width: 0%;
-      transition: width 0.1s linear;
+      z-index: 9999; width: 0%; transition: width 0.1s linear;
     }
 
     /* ============================
        回到顶部
     ============================ */
     #back-top {
-      position: fixed;
-      bottom: 32px; right: 32px;
+      position: fixed; bottom: 32px; right: 32px;
       width: 44px; height: 44px;
       background: linear-gradient(135deg, var(--primary), var(--primary2));
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
+      border: none; border-radius: 12px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      color: white;
-      font-size: 18px;
-      opacity: 0;
-      transform: translateY(12px);
-      transition: var(--transition);
-      z-index: 999;
-      box-shadow: 0 4px 20px rgba(108,99,255,0.4);
+      color: white; font-size: 18px;
+      opacity: 0; transform: translateY(12px); transition: var(--transition);
+      z-index: 999; box-shadow: 0 4px 20px rgba(108,99,255,0.4);
     }
     #back-top.show { opacity: 1; transform: translateY(0); }
     #back-top:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(108,99,255,0.6); }
+
+    /* ============================
+       设置面板 (Settings Panel)
+    ============================ */
+    .settings-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 2000; display: flex; align-items: flex-end; justify-content: flex-end;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    }
+    .settings-overlay.open { opacity: 1; pointer-events: all; }
+    .settings-panel {
+      width: 100%; max-width: 480px; height: 100%;
+      background: #0f1528; border-left: 1px solid var(--card-border);
+      display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    .settings-overlay.open .settings-panel { transform: translateX(0); }
+    .settings-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 24px; border-bottom: 1px solid var(--card-border); flex-shrink: 0;
+    }
+    .settings-header h2 { font-size: 18px; font-weight: 700; }
+    .settings-close {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--card); border: 1px solid var(--card-border);
+      color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: var(--transition); font-size: 18px;
+    }
+    .settings-close:hover { background: var(--card-hover); color: var(--text); }
+    .settings-body { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+    .settings-group {}
+    .settings-label {
+      display: block; font-size: 13px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
+    }
+    .settings-input {
+      width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--card-border);
+      border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 14px;
+      font-family: inherit; outline: none; transition: var(--transition);
+    }
+    .settings-input:focus { border-color: rgba(108,99,255,0.5); box-shadow: 0 0 0 3px rgba(108,99,255,0.1); }
+    .settings-input::placeholder { color: var(--text-muted); }
+    .settings-select {
+      width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--card-border);
+      border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 14px;
+      font-family: inherit; outline: none; cursor: pointer; transition: var(--transition);
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238892a4' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; background-size: 16px;
+      padding-right: 40px;
+    }
+    .settings-select option { background: #0f1528; }
+    .settings-select:focus { border-color: rgba(108,99,255,0.5); }
+    .settings-textarea {
+      width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--card-border);
+      border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 14px;
+      font-family: inherit; outline: none; transition: var(--transition);
+      resize: vertical; min-height: 96px;
+    }
+    .settings-textarea:focus { border-color: rgba(108,99,255,0.5); }
+    .settings-hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+    .settings-hint a { color: var(--primary2); text-decoration: underline; text-decoration-color: rgba(0,212,255,0.4); }
+    .settings-footer { padding: 24px; border-top: 1px solid var(--card-border); flex-shrink: 0; }
+    .settings-save {
+      width: 100%; padding: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      border: none; border-radius: 10px; color: white;
+      font-size: 15px; font-weight: 700; transition: var(--transition);
+      box-shadow: 0 0 20px rgba(108,99,255,0.3);
+    }
+    .settings-save:hover { transform: translateY(-1px); box-shadow: 0 0 30px rgba(108,99,255,0.5); }
+
+    /* API key status indicator */
+    .api-status {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    }
+    .api-status.ok   { background: rgba(34,197,94,0.1); color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+    .api-status.miss { background: rgba(251,191,36,0.1); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+    .api-status .api-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    /* ============================
+       响应式
+    ============================ */
+    @media (max-width: 900px) {
+      .hero-visual { display: none; }
+    }
+    @media (max-width: 700px) {
+      section { padding: 56px 0; }
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .cta-box { padding: 48px 28px; }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+      .chat-messages { height: 360px; }
+      .settings-panel { max-width: 100%; border-left: none; border-top: 1px solid var(--card-border); }
+      .settings-overlay { align-items: flex-end; }
+    }
+    @media (max-width: 480px) {
+      .chat-input-footer { flex-direction: column; align-items: flex-start; gap: 6px; }
+    }
   </style>
 </head>
 <body>
@@ -874,7 +704,7 @@
 <div id="progress-bar" role="progressbar" aria-hidden="true"></div>
 
 <!-- 跳过导航（无障碍 Skip Link）-->
-<a class="skip-link" href="#hero">跳至主内容</a>
+<a class="skip-link" href="#chat">跳至主内容</a>
 
 <!-- 背景装饰 -->
 <div class="bg-orbs" aria-hidden="true">
@@ -887,25 +717,31 @@
 <nav id="navbar">
   <div class="container nav-inner">
     <a href="#" class="nav-logo">
-      <span class="emoji">🤖</span>
-      <span class="gradient-text">AI Guide</span>
+      <span class="emoji">💬</span>
+      <span class="gradient-text">AI Chat</span>
     </a>
     <ul class="nav-links" id="navLinks">
-      <li><a href="#about">关于</a></li>
-      <li><a href="#content">精选内容</a></li>
-      <li><a href="#roadmap">路线图</a></li>
-      <li><a href="#changelog">更新日志</a></li>
-      <li><a href="#growth">增长趋势</a></li>
+      <li><a href="#chat">对话</a></li>
+      <li><a href="#features">功能</a></li>
+      <li><a href="#quickstart">快速开始</a></li>
       <li>
-        <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="nav-cta">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85.004 1.71.115 2.51.337 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/>
-          </svg>
+        <a href="https://github.com/bill20221124/GitHub-claw" target="_blank" rel="noopener">
           GitHub
         </a>
       </li>
     </ul>
-    <button class="hamburger" id="hamburger" aria-label="菜单">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="navApiStatus" class="api-status miss">
+        <span class="api-dot"></span>未配置 API Key
+      </span>
+      <button class="nav-settings-btn" id="openSettings" aria-label="打开设置">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        配置
+      </button>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="菜单" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
   </div>
@@ -919,47 +755,37 @@
     <div class="hero-content">
       <div class="hero-badge">
         <span class="dot"></span>
-        开源 · 免费 · 持续更新
+        支持 OpenAI · 兼容任意 OpenAI 格式接口
       </div>
       <h1 class="hero-title">
-        <span class="line1">探索 AI 的</span>
-        <span class="gradient-text">无限可能</span>
+        <span class="line1">与 AI 对话，</span>
+        <span class="gradient-text">释放无限创造力</span>
       </h1>
       <p class="hero-desc">
-        AI Guide 是一个精心整理的开源 AI 知识库，涵盖提示词工程、模型评测、工具推荐、学习路径、前沿资讯等，帮助每个人掌握 AI 时代的核心技能。
+        一个开放的 AI 对话平台。使用你自己的 API Key，接入 GPT-4o、DeepSeek、Qwen 等任意 OpenAI 兼容模型，流式输出，完整 Markdown 渲染，零依赖，开箱即用。
       </p>
       <div class="hero-actions">
-        <a href="#content" class="btn-primary">
-          🚀 探索内容
+        <a href="#chat" class="btn-primary">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          开始对话
         </a>
-        <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="btn-secondary">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85.004 1.71.115 2.51.337 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
-          在 GitHub 上查看
-        </a>
+        <button class="btn-secondary" id="heroOpenSettings">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          配置 API Key
+        </button>
       </div>
-      <div class="hero-stats">
-        <div class="stat-item">
-          <div class="stat-value" data-target="2800">0</div>
-          <div class="stat-label">⭐ Stars</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value" data-target="430">0</div>
-          <div class="stat-label">🍴 Forks</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value" data-target="60">0</div>
-          <div class="stat-label">🧩 知识模块</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value" data-target="12000">0</div>
-          <div class="stat-label">👀 月访问量</div>
-        </div>
+      <div class="hero-chips">
+        <span class="hero-chip"><span class="chip-dot" style="background:#22c55e"></span>GPT-4o / 4o-mini</span>
+        <span class="hero-chip"><span class="chip-dot" style="background:var(--primary2)"></span>DeepSeek / Qwen</span>
+        <span class="hero-chip"><span class="chip-dot" style="background:var(--accent)"></span>流式输出</span>
+        <span class="hero-chip"><span class="chip-dot" style="background:#fbbf24"></span>Markdown + 代码高亮</span>
+        <span class="hero-chip"><span class="chip-dot" style="background:var(--primary)"></span>本地 API Key</span>
       </div>
     </div>
 
     <!-- Hero 装饰图 -->
     <div class="hero-visual" aria-hidden="true">
-      <svg viewBox="0 0 420 420" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;opacity:0.9;">
+      <svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;opacity:0.85;">
         <defs>
           <radialGradient id="rg1" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stop-color="#6c63ff" stop-opacity="0.3"/>
@@ -974,410 +800,181 @@
             <stop offset="100%" stop-color="#00d4ff"/>
           </linearGradient>
         </defs>
-        <!-- glow circles -->
-        <circle cx="210" cy="210" r="180" fill="url(#rg1)"/>
-        <circle cx="280" cy="140" r="100" fill="url(#rg2)"/>
-        <!-- outer ring -->
-        <circle cx="210" cy="210" r="170" stroke="rgba(108,99,255,0.15)" stroke-width="1" stroke-dasharray="8 4"/>
-        <circle cx="210" cy="210" r="130" stroke="rgba(0,212,255,0.12)" stroke-width="1"/>
-        <!-- center brain icon -->
-        <circle cx="210" cy="210" r="60" fill="rgba(255,255,255,0.04)" stroke="url(#lg1)" stroke-width="1.5"/>
-        <text x="210" y="228" text-anchor="middle" font-size="52" dominant-baseline="middle">🧠</text>
-        <!-- satellite nodes -->
-        <circle cx="210" cy="60" r="22" fill="rgba(108,99,255,0.15)" stroke="rgba(108,99,255,0.4)" stroke-width="1"/>
-        <text x="210" y="68" text-anchor="middle" font-size="18">✨</text>
-        <circle cx="340" cy="150" r="22" fill="rgba(0,212,255,0.1)" stroke="rgba(0,212,255,0.35)" stroke-width="1"/>
-        <text x="340" y="158" text-anchor="middle" font-size="18">📚</text>
-        <circle cx="340" cy="280" r="22" fill="rgba(255,107,157,0.1)" stroke="rgba(255,107,157,0.35)" stroke-width="1"/>
-        <text x="340" y="288" text-anchor="middle" font-size="18">🛠️</text>
-        <circle cx="210" cy="360" r="22" fill="rgba(34,197,94,0.1)" stroke="rgba(34,197,94,0.3)" stroke-width="1"/>
-        <text x="210" y="368" text-anchor="middle" font-size="18">🗺️</text>
-        <circle cx="80" cy="280" r="22" fill="rgba(251,191,36,0.1)" stroke="rgba(251,191,36,0.3)" stroke-width="1"/>
-        <text x="80" y="288" text-anchor="middle" font-size="18">📈</text>
-        <circle cx="80" cy="150" r="22" fill="rgba(168,85,247,0.1)" stroke="rgba(168,85,247,0.3)" stroke-width="1"/>
-        <text x="80" y="158" text-anchor="middle" font-size="18">💡</text>
-        <!-- connection lines -->
-        <line x1="210" y1="150" x2="210" y2="82" stroke="rgba(108,99,255,0.25)" stroke-width="1" stroke-dasharray="4 3"/>
-        <line x1="258" y1="175" x2="319" y2="162" stroke="rgba(0,212,255,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
-        <line x1="258" y1="245" x2="319" y2="268" stroke="rgba(255,107,157,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
-        <line x1="210" y1="270" x2="210" y2="338" stroke="rgba(34,197,94,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
-        <line x1="162" y1="245" x2="101" y2="268" stroke="rgba(251,191,36,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
-        <line x1="162" y1="175" x2="101" y2="162" stroke="rgba(168,85,247,0.2)" stroke-width="1" stroke-dasharray="4 3"/>
+        <circle cx="200" cy="200" r="170" fill="url(#rg1)"/>
+        <circle cx="260" cy="130" r="90" fill="url(#rg2)"/>
+        <circle cx="200" cy="200" r="160" stroke="rgba(108,99,255,0.12)" stroke-width="1" stroke-dasharray="8 4"/>
+        <!-- Chat bubble shapes -->
+        <rect x="80" y="110" width="180" height="70" rx="18" fill="rgba(108,99,255,0.12)" stroke="rgba(108,99,255,0.3)" stroke-width="1"/>
+        <rect x="85" y="120" width="110" height="10" rx="5" fill="rgba(108,99,255,0.35)"/>
+        <rect x="85" y="137" width="150" height="8" rx="4" fill="rgba(255,255,255,0.12)"/>
+        <rect x="85" y="152" width="95" height="8" rx="4" fill="rgba(255,255,255,0.08)"/>
+        <polygon points="100,180 115,180 108,194" fill="rgba(108,99,255,0.3)"/>
+        <rect x="142" y="210" width="180" height="70" rx="18" fill="rgba(0,212,255,0.08)" stroke="rgba(0,212,255,0.25)" stroke-width="1"/>
+        <rect x="148" y="220" width="120" height="10" rx="5" fill="rgba(0,212,255,0.35)"/>
+        <rect x="148" y="237" width="160" height="8" rx="4" fill="rgba(255,255,255,0.12)"/>
+        <rect x="148" y="252" width="100" height="8" rx="4" fill="rgba(255,255,255,0.08)"/>
+        <polygon points="296,280 311,280 304,294" fill="rgba(0,212,255,0.25)"/>
+        <!-- Floating dots -->
+        <circle cx="340" cy="90" r="8" fill="rgba(108,99,255,0.25)" stroke="rgba(108,99,255,0.5)" stroke-width="1"/>
+        <circle cx="60" cy="260" r="6" fill="rgba(255,107,157,0.2)" stroke="rgba(255,107,157,0.4)" stroke-width="1"/>
+        <circle cx="360" cy="300" r="5" fill="rgba(0,212,255,0.2)" stroke="rgba(0,212,255,0.4)" stroke-width="1"/>
       </svg>
     </div>
   </div>
 </section>
 
 <!-- ============================
-     关于 & 特性
+     AI 对话区
 ============================ -->
-<section id="about" style="background:var(--bg2)">
+<section id="chat">
   <div class="container">
-    <div class="reveal">
-      <div class="section-label">✦ 关于项目</div>
-      <h2 class="section-title">为什么选择 AI Guide？</h2>
-      <p class="section-desc">我们相信，AI 知识应该人人可得。AI Guide 不仅是一个知识库，更是一个帮助你系统掌握 AI 技能的学习伙伴。</p>
+    <div class="chat-wrapper">
+      <div class="reveal">
+        <div class="section-label">✦ AI 对话</div>
+        <h2 class="section-title" style="margin-bottom:8px">开始你的 AI 对话</h2>
+        <p class="section-desc" style="margin-bottom:32px">配置 API Key 后即可与 AI 自由对话，支持流式输出和完整 Markdown 渲染。</p>
+      </div>
+
+      <!-- 对话界面 -->
+      <div class="chat-header reveal">
+        <div class="chat-model-badge">
+          <span class="model-dot"></span>
+          <span id="currentModelLabel">gpt-4o-mini</span>
+        </div>
+        <div class="chat-actions">
+          <button class="chat-btn" id="clearChatBtn" title="清空对话">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+            清空
+          </button>
+          <button class="chat-btn" id="openSettingsChat" title="设置">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            设置
+          </button>
+        </div>
+      </div>
+
+      <!-- 消息列表 -->
+      <div class="chat-messages reveal" id="chatMessages" role="log" aria-live="polite" aria-label="对话历史">
+        <div class="chat-welcome" id="chatWelcome">
+          <div class="chat-welcome-icon">💬</div>
+          <h3>你好，我是 AI 助手</h3>
+          <p>请先在右上角配置你的 API Key，然后在下方输入你的问题，开始对话吧！</p>
+        </div>
+      </div>
+
+      <!-- 输入区 -->
+      <div class="chat-input-area reveal">
+        <div class="chat-input-row">
+          <textarea
+            id="chatInput"
+            placeholder="输入你的问题…（Shift+Enter 换行，Enter 发送）"
+            rows="1"
+            aria-label="消息输入框"
+          ></textarea>
+          <button class="send-btn" id="sendBtn" aria-label="发送消息" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+        <div class="chat-input-footer">
+          <div class="chat-hint">
+            <span><kbd>Enter</kbd> 发送</span>
+            <span><kbd>Shift</kbd>+<kbd>Enter</kbd> 换行</span>
+          </div>
+          <span id="charCount">0 / 4000</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================
+     功能特性
+============================ -->
+<section id="features">
+  <div class="container">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
+      <div class="section-label">✦ 功能特性</div>
+      <h2 class="section-title">为对话而生的体验</h2>
+      <p class="section-desc" style="margin:0 auto">精心设计的每一处细节，让你专注于与 AI 的对话本身。</p>
     </div>
     <div class="features-grid">
       <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(108,99,255,0.12)">🧩</div>
-        <h3>系统化知识体系</h3>
-        <p>从基础概念到前沿技术，覆盖提示词工程、RAG、Agent、Fine-tuning 等完整知识链路。</p>
+        <div class="feature-icon" style="background:rgba(108,99,255,0.12)">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#a78bfa" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </div>
+        <h3>流式实时输出</h3>
+        <p>基于 Server-Sent Events 的流式输出，AI 的每一个 token 都实时呈现，无需等待完整响应。</p>
       </div>
       <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(0,212,255,0.1)">🛠️</div>
-        <h3>实战工具推荐</h3>
-        <p>精选 100+ AI 工具与平台，附带真实使用评测和上手指南，帮你快速找到最适合的工具。</p>
+        <div class="feature-icon" style="background:rgba(0,212,255,0.1)">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#67e8f9" stroke-width="2" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </div>
+        <h3>完整 Markdown 渲染</h3>
+        <p>支持代码块语法高亮、表格、列表、引用等完整 Markdown 格式，技术文档阅读体验一流。</p>
       </div>
       <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(255,107,157,0.1)">📰</div>
-        <h3>前沿资讯速递</h3>
-        <p>每周更新 AI 领域最新动态，追踪 GPT、Claude、Gemini 等主流模型的进展。</p>
+        <div class="feature-icon" style="background:rgba(255,107,157,0.1)">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#f9a8d4" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3>本地 API Key 安全</h3>
+        <p>API Key 仅存储在你的浏览器 localStorage 中，不经过任何第三方服务器，完全私密安全。</p>
       </div>
       <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(34,197,94,0.1)">🗺️</div>
-        <h3>清晰学习路径</h3>
-        <p>为不同背景的学习者提供定制化学习路线，无论你是零基础还是开发者，都能找到适合自己的路径。</p>
+        <div class="feature-icon" style="background:rgba(34,197,94,0.1)">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#4ade80" stroke-width="2" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <h3>多模型兼容</h3>
+        <p>支持 OpenAI、Azure OpenAI、DeepSeek、通义千问等任意 OpenAI API 兼容接口，自定义 Base URL。</p>
       </div>
       <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(251,191,36,0.1)">🤝</div>
-        <h3>开源社区驱动</h3>
-        <p>所有内容均由社区共建，欢迎 PR、Issue 和 Discussion，一起打造最好的中文 AI 知识库。</p>
+        <div class="feature-icon" style="background:rgba(251,191,36,0.1)">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fde68a" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </div>
+        <h3>自定义系统提示词</h3>
+        <p>灵活设置 System Prompt，为 AI 指定角色、语气和专业领域，打造专属 AI 助手。</p>
       </div>
       <div class="feature-card reveal">
-        <div class="feature-icon" style="background:rgba(168,85,247,0.1)">🌍</div>
-        <h3>中英双语支持</h3>
-        <p>核心内容提供中英双语版本，帮助你直接阅读英文原始资料，不再受语言障碍所限。</p>
+        <div class="feature-icon" style="background:rgba(168,85,247,0.1)">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#c4b5fd" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <h3>对话上下文管理</h3>
+        <p>完整的多轮对话上下文，AI 记得你说过的每一句话。支持一键清空，随时开始全新对话。</p>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ============================
-     精选内容
+     快速开始
 ============================ -->
-<section id="content">
-  <div class="container">
-    <div class="content-header reveal">
-      <div>
-        <div class="section-label">✦ 精选内容</div>
-        <h2 class="section-title">深度好文，一网打尽</h2>
-        <p class="section-desc">社区精心筛选的高质量内容，每一篇都值得收藏。</p>
-      </div>
-      <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="github-btn">
-        查看全部
-        <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-      </a>
-    </div>
-    <div class="content-grid">
-      <!-- Card 1 -->
-      <div class="content-card reveal">
-        <div class="content-card-banner" style="background:linear-gradient(90deg,#6c63ff,#00d4ff)"></div>
-        <div class="content-card-body">
-          <div class="content-tags">
-            <span class="tag" style="background:rgba(108,99,255,0.15);color:#a78bfa">提示词工程</span>
-            <span class="tag" style="background:rgba(34,197,94,0.1);color:#4ade80">必读</span>
-          </div>
-          <h3>Prompt Engineering 完全指南</h3>
-          <p>从基础的 Zero-shot 到 Chain-of-Thought、Tree-of-Thought，系统掌握提示词设计的核心方法论，附大量实战案例。</p>
-          <div class="content-card-footer">
-            <span class="meta-info">📖 预计阅读 15 分钟</span>
-            <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="link-btn">阅读 →</a>
-          </div>
-        </div>
-      </div>
-      <!-- Card 2 -->
-      <div class="content-card reveal">
-        <div class="content-card-banner" style="background:linear-gradient(90deg,#00d4ff,#22c55e)"></div>
-        <div class="content-card-body">
-          <div class="content-tags">
-            <span class="tag" style="background:rgba(0,212,255,0.12);color:#67e8f9">RAG</span>
-            <span class="tag" style="background:rgba(251,191,36,0.1);color:#fde68a">热门</span>
-          </div>
-          <h3>RAG 检索增强生成实战</h3>
-          <p>深入讲解 RAG 架构设计、向量数据库选型、Chunking 策略，带你从零构建企业级知识库问答系统。</p>
-          <div class="content-card-footer">
-            <span class="meta-info">📖 预计阅读 20 分钟</span>
-            <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="link-btn">阅读 →</a>
-          </div>
-        </div>
-      </div>
-      <!-- Card 3 -->
-      <div class="content-card reveal">
-        <div class="content-card-banner" style="background:linear-gradient(90deg,#ff6b9d,#a855f7)"></div>
-        <div class="content-card-body">
-          <div class="content-tags">
-            <span class="tag" style="background:rgba(255,107,157,0.12);color:#f9a8d4">AI Agent</span>
-            <span class="tag" style="background:rgba(108,99,255,0.15);color:#a78bfa">进阶</span>
-          </div>
-          <h3>AI Agent 设计模式与框架对比</h3>
-          <p>全面对比 LangChain、AutoGen、CrewAI 等主流 Agent 框架，深入解析 ReAct、Planning、Tool Use 核心模式。</p>
-          <div class="content-card-footer">
-            <span class="meta-info">📖 预计阅读 18 分钟</span>
-            <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="link-btn">阅读 →</a>
-          </div>
-        </div>
-      </div>
-      <!-- Card 4 -->
-      <div class="content-card reveal">
-        <div class="content-card-banner" style="background:linear-gradient(90deg,#fbbf24,#f97316)"></div>
-        <div class="content-card-body">
-          <div class="content-tags">
-            <span class="tag" style="background:rgba(251,191,36,0.12);color:#fde68a">工具推荐</span>
-            <span class="tag" style="background:rgba(34,197,94,0.1);color:#4ade80">2024 新</span>
-          </div>
-          <h3>2024 最值得关注的 AI 工具精选</h3>
-          <p>精选 Cursor、Perplexity、Notion AI 等 30+ 生产力工具，每款附使用场景和上手指南，告别信息过载。</p>
-          <div class="content-card-footer">
-            <span class="meta-info">📖 预计阅读 10 分钟</span>
-            <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="link-btn">阅读 →</a>
-          </div>
-        </div>
-      </div>
-      <!-- Card 5 -->
-      <div class="content-card reveal">
-        <div class="content-card-banner" style="background:linear-gradient(90deg,#22c55e,#06b6d4)"></div>
-        <div class="content-card-body">
-          <div class="content-tags">
-            <span class="tag" style="background:rgba(34,197,94,0.12);color:#4ade80">Fine-tuning</span>
-          </div>
-          <h3>大模型微调完整流程详解</h3>
-          <p>从数据准备、LoRA/QLoRA 配置到训练监控与评测，一步步带你完成首个微调任务，配套代码和脚本。</p>
-          <div class="content-card-footer">
-            <span class="meta-info">📖 预计阅读 25 分钟</span>
-            <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="link-btn">阅读 →</a>
-          </div>
-        </div>
-      </div>
-      <!-- Card 6 -->
-      <div class="content-card reveal">
-        <div class="content-card-banner" style="background:linear-gradient(90deg,#8b5cf6,#ec4899)"></div>
-        <div class="content-card-body">
-          <div class="content-tags">
-            <span class="tag" style="background:rgba(139,92,246,0.12);color:#c4b5fd">评测</span>
-            <span class="tag" style="background:rgba(251,191,36,0.1);color:#fde68a">对比</span>
-          </div>
-          <h3>主流大模型横向评测报告</h3>
-          <p>对 GPT-4o、Claude 3.5、Gemini 1.5、Qwen 等主流模型进行编码、推理、写作、中文理解等维度的全面评测。</p>
-          <div class="content-card-footer">
-            <span class="meta-info">📖 预计阅读 12 分钟</span>
-            <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="link-btn">阅读 →</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================
-     路线图
-============================ -->
-<section id="roadmap">
+<section id="quickstart">
   <div class="container">
     <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
-      <div class="section-label">✦ 路线图</div>
-      <h2 class="section-title">我们要去哪里？</h2>
-      <p class="section-desc" style="margin:0 auto">清晰的发展规划，让每一位贡献者都能了解项目方向。</p>
+      <div class="section-label">✦ 快速开始</div>
+      <h2 class="section-title">三步上手，立即对话</h2>
+      <p class="section-desc" style="margin:0 auto">无需安装，无需注册，打开网页即可使用。</p>
     </div>
-    <div class="roadmap-phases">
-      <div class="phase-card reveal">
-        <div class="phase-num">Phase 01 · 2023 Q4</div>
-        <h3>🌱 项目起步</h3>
-        <div class="phase-status status-done">✓ 已完成</div>
-        <ul class="phase-list">
-          <li>建立知识库基础框架</li>
-          <li>整理 Prompt 工程核心内容</li>
-          <li>完成 50+ 精选工具收录</li>
-          <li>搭建 GitHub 项目主页</li>
-        </ul>
-        <div class="phase-progress"><div class="phase-progress-bar" style="width:100%"></div></div>
+    <div class="steps">
+      <div class="step-card reveal">
+        <div class="step-num">01</div>
+        <h3>获取 API Key</h3>
+        <p>前往 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style="color:var(--primary2)">OpenAI 官网</a> 或其他兼容服务商申请 API Key。国内用户可使用 DeepSeek、通义千问等服务。</p>
+        <span class="step-tag" style="background:rgba(34,197,94,0.1);color:#4ade80;border:1px solid rgba(34,197,94,0.2)">必要步骤</span>
       </div>
-      <div class="phase-card reveal">
-        <div class="phase-num">Phase 02 · 2024 Q1–Q2</div>
-        <h3>🚀 内容扩张</h3>
-        <div class="phase-status status-done">✓ 已完成</div>
-        <ul class="phase-list">
-          <li>新增 RAG、Agent 系列专题</li>
-          <li>发布大模型横向评测报告</li>
-          <li>引入社区贡献流程</li>
-          <li>突破 1000 Stars</li>
-        </ul>
-        <div class="phase-progress"><div class="phase-progress-bar" style="width:100%"></div></div>
+      <div class="step-card reveal">
+        <div class="step-num">02</div>
+        <h3>配置 API 设置</h3>
+        <p>点击右上角「配置」按钮，填入你的 API Key、接口地址（Base URL）和偏好模型，点击保存。</p>
+        <span class="step-tag" style="background:rgba(108,99,255,0.1);color:#a78bfa;border:1px solid rgba(108,99,255,0.2)">一次性配置</span>
       </div>
-      <div class="phase-card reveal">
-        <div class="phase-num">Phase 03 · 2024 Q3–Q4</div>
-        <h3>🔥 社区共建</h3>
-        <div class="phase-status status-wip">⚡ 进行中</div>
-        <ul class="phase-list">
-          <li>Fine-tuning 实战专栏上线</li>
-          <li>构建多模态 AI 专题</li>
-          <li>启动导航官网</li>
-          <li>目标 3000 Stars</li>
-        </ul>
-        <div class="phase-progress"><div class="phase-progress-bar" style="width:65%"></div></div>
-      </div>
-      <div class="phase-card reveal">
-        <div class="phase-num">Phase 04 · 2025</div>
-        <h3>🌐 生态扩展</h3>
-        <div class="phase-status status-plan">📋 规划中</div>
-        <ul class="phase-list">
-          <li>推出互动学习平台</li>
-          <li>建立 AI 项目案例库</li>
-          <li>开放 API 数据接口</li>
-          <li>目标 10000 Stars</li>
-        </ul>
-        <div class="phase-progress"><div class="phase-progress-bar" style="width:0%"></div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================
-     更新日志
-============================ -->
-<section id="changelog">
-  <div class="container">
-    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
-      <div class="section-label">✦ 更新日志</div>
-      <h2 class="section-title">每一次迭代，都是进步</h2>
-      <p class="section-desc" style="margin:0 auto">透明的更新记录，让你随时掌握最新动态。</p>
-    </div>
-    <div class="changelog-wrap">
-      <!-- v1.4 -->
-      <div class="changelog-item reveal">
-        <div class="changelog-date">2024-11</div>
-        <div class="changelog-dot"></div>
-        <div class="changelog-content">
-          <div class="changelog-version">
-            <span class="version-tag">v1.4</span>
-            <span style="font-size:13px;color:var(--text-muted)">最新版本</span>
-          </div>
-          <div class="changelog-title">多模态专题 & 导航官网上线</div>
-          <ul class="changelog-list">
-            <li><span class="badge badge-new">NEW</span>新增多模态 AI 系列（图像、视频、语音）</li>
-            <li><span class="badge badge-new">NEW</span>官方导航网站正式上线</li>
-            <li><span class="badge badge-imp">IMP</span>优化工具分类体系，增加标签筛选</li>
-            <li><span class="badge badge-docs">DOCS</span>补充 Fine-tuning 代码示例与注释</li>
-          </ul>
-        </div>
-      </div>
-      <!-- v1.3 -->
-      <div class="changelog-item reveal">
-        <div class="changelog-date">2024-08</div>
-        <div class="changelog-dot"></div>
-        <div class="changelog-content">
-          <div class="changelog-version">
-            <span class="version-tag">v1.3</span>
-          </div>
-          <div class="changelog-title">Fine-tuning 专栏 & 社区贡献优化</div>
-          <ul class="changelog-list">
-            <li><span class="badge badge-new">NEW</span>发布 Fine-tuning 完整实战系列（共 8 篇）</li>
-            <li><span class="badge badge-new">NEW</span>新增贡献者名人堂页面</li>
-            <li><span class="badge badge-imp">IMP</span>重构 CONTRIBUTING.md，贡献流程更清晰</li>
-            <li><span class="badge badge-fix">FIX</span>修正多处内容错误，感谢社区反馈</li>
-          </ul>
-        </div>
-      </div>
-      <!-- v1.2 -->
-      <div class="changelog-item reveal">
-        <div class="changelog-date">2024-05</div>
-        <div class="changelog-dot"></div>
-        <div class="changelog-content">
-          <div class="changelog-version">
-            <span class="version-tag">v1.2</span>
-          </div>
-          <div class="changelog-title">AI Agent 系列 & 大模型评测报告</div>
-          <ul class="changelog-list">
-            <li><span class="badge badge-new">NEW</span>上线 AI Agent 设计模式专题</li>
-            <li><span class="badge badge-new">NEW</span>发布 2024 H1 大模型横向评测报告</li>
-            <li><span class="badge badge-imp">IMP</span>Prompt 工程章节大幅扩充，新增 ToT、GoT 内容</li>
-          </ul>
-        </div>
-      </div>
-      <!-- v1.1 -->
-      <div class="changelog-item reveal">
-        <div class="changelog-date">2024-01</div>
-        <div class="changelog-dot"></div>
-        <div class="changelog-content">
-          <div class="changelog-version">
-            <span class="version-tag">v1.1</span>
-          </div>
-          <div class="changelog-title">RAG 专题 & 工具库扩充</div>
-          <ul class="changelog-list">
-            <li><span class="badge badge-new">NEW</span>新增 RAG 检索增强生成完整系列</li>
-            <li><span class="badge badge-new">NEW</span>工具库扩充至 100+，增加使用评测</li>
-            <li><span class="badge badge-docs">DOCS</span>新增英文版 README</li>
-          </ul>
-        </div>
-      </div>
-      <!-- v1.0 -->
-      <div class="changelog-item reveal">
-        <div class="changelog-date">2023-11</div>
-        <div class="changelog-dot"></div>
-        <div class="changelog-content">
-          <div class="changelog-version">
-            <span class="version-tag">v1.0</span>
-          </div>
-          <div class="changelog-title">🎉 项目正式发布</div>
-          <ul class="changelog-list">
-            <li><span class="badge badge-new">NEW</span>知识库首版正式上线</li>
-            <li><span class="badge badge-new">NEW</span>Prompt 工程基础到进阶完整内容</li>
-            <li><span class="badge badge-new">NEW</span>收录 50+ 精选 AI 工具</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================
-     增长趋势
-============================ -->
-<section id="growth">
-  <div class="container">
-    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
-      <div class="section-label">✦ 增长趋势</div>
-      <h2 class="section-title">数据见证成长</h2>
-      <p class="section-desc" style="margin:0 auto">开源就是最好的证明，每一颗 Star 都是认可与鼓励。</p>
-    </div>
-    <div class="growth-layout">
-      <div class="growth-chart-wrap reveal">
-        <div class="growth-chart-title">⭐ GitHub Stars 增长曲线</div>
-        <canvas id="starsChart" height="240"></canvas>
-      </div>
-      <div class="growth-stats">
-        <div class="growth-stat-card reveal">
-          <div class="gstat-icon" style="background:rgba(108,99,255,0.12)">⭐</div>
-          <div>
-            <div class="gstat-value" style="background:linear-gradient(135deg,var(--primary),var(--primary2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">2,800+</div>
-            <div class="gstat-label">累计 Stars</div>
-          </div>
-          <div class="gstat-trend trend-up">↑ 38%</div>
-        </div>
-        <div class="growth-stat-card reveal">
-          <div class="gstat-icon" style="background:rgba(0,212,255,0.1)">🍴</div>
-          <div>
-            <div class="gstat-value" style="background:linear-gradient(135deg,var(--primary2),#22c55e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">430+</div>
-            <div class="gstat-label">累计 Forks</div>
-          </div>
-          <div class="gstat-trend trend-up">↑ 24%</div>
-        </div>
-        <div class="growth-stat-card reveal">
-          <div class="gstat-icon" style="background:rgba(255,107,157,0.1)">👥</div>
-          <div>
-            <div class="gstat-value" style="background:linear-gradient(135deg,var(--accent),#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">1,200+</div>
-            <div class="gstat-label">月活跃用户</div>
-          </div>
-          <div class="gstat-trend trend-up">↑ 52%</div>
-        </div>
-        <div class="growth-stat-card reveal">
-          <div class="gstat-icon" style="background:rgba(34,197,94,0.1)">🌍</div>
-          <div>
-            <div class="gstat-value" style="background:linear-gradient(135deg,#22c55e,var(--primary2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">56+</div>
-            <div class="gstat-label">贡献者数量</div>
-          </div>
-          <div class="gstat-trend trend-up">↑ 80%</div>
-        </div>
+      <div class="step-card reveal">
+        <div class="step-num">03</div>
+        <h3>开始对话</h3>
+        <p>配置完成后，在对话框输入问题，按 Enter 发送，AI 将以流式方式实时回复你的消息。</p>
+        <span class="step-tag" style="background:rgba(0,212,255,0.1);color:#67e8f9;border:1px solid rgba(0,212,255,0.2)">即刻使用</span>
       </div>
     </div>
   </div>
@@ -1389,19 +986,17 @@
 <section id="cta">
   <div class="container">
     <div class="cta-box reveal">
-      <div class="section-label" style="justify-content:center">✦ 加入我们</div>
-      <h2>一起构建更好的 AI 知识库</h2>
-      <p>无论是提交 PR、报告问题、分享使用经验，还是简单地给一颗 Star，都是对项目最好的支持。</p>
+      <div class="section-label" style="justify-content:center">✦ 立即体验</div>
+      <h2>用 AI 重新定义你的工作流</h2>
+      <p>打开浏览器，配置 API Key，与 AI 展开对话——就是这么简单。</p>
       <div class="cta-actions">
-        <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener" class="btn-primary">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85.004 1.71.115 2.51.337 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
-          ⭐ 给我一颗 Star
+        <a href="#chat" class="btn-primary">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          开始对话
         </a>
-        <a href="https://github.com/bill20221124/ai-guide/issues" target="_blank" rel="noopener" class="btn-secondary">
-          💬 参与讨论
-        </a>
-        <a href="https://github.com/bill20221124/ai-guide/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener" class="btn-secondary">
-          🤝 贡献内容
+        <a href="https://github.com/bill20221124/GitHub-claw" target="_blank" rel="noopener" class="btn-secondary">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85.004 1.71.115 2.51.337 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
+          查看源码
         </a>
       </div>
     </div>
@@ -1414,16 +1009,16 @@
 <footer>
   <div class="container footer-inner">
     <div class="nav-logo footer-logo">
-      <span class="emoji">🤖</span>
-      <span class="gradient-text">AI Guide</span>
+      <span class="emoji">💬</span>
+      <span class="gradient-text">AI Chat</span>
     </div>
     <div class="footer-links">
-      <a href="https://github.com/bill20221124/ai-guide" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://github.com/bill20221124/ai-guide/issues" target="_blank" rel="noopener">反馈</a>
-      <a href="https://github.com/bill20221124/ai-guide/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">贡献</a>
+      <a href="https://github.com/bill20221124/GitHub-claw" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/bill20221124/GitHub-claw/issues" target="_blank" rel="noopener">反馈</a>
+      <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">获取 API Key</a>
     </div>
     <div class="footer-copy">
-      © 2024 AI Guide · 以 MIT 协议开源
+      © 2026 AI Chat · MIT 协议开源
     </div>
   </div>
 </footer>
@@ -1431,43 +1026,579 @@
 <!-- 回到顶部 -->
 <button id="back-top" aria-label="回到顶部">↑</button>
 
+<!-- ============================
+     设置面板
+============================ -->
+<div class="settings-overlay" id="settingsOverlay" role="dialog" aria-modal="true" aria-label="API 配置设置">
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-header">
+      <h2>⚙️ API 配置</h2>
+      <button class="settings-close" id="closeSettings" aria-label="关闭设置">✕</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-group">
+        <label class="settings-label" for="settingsApiKey">API Key</label>
+        <input type="password" id="settingsApiKey" class="settings-input"
+               placeholder="sk-..." autocomplete="off" spellcheck="false" />
+        <p class="settings-hint">
+          仅存储在本地浏览器，不上传到任何服务器。
+          <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">获取 OpenAI Key →</a>
+        </p>
+      </div>
+      <div class="settings-group">
+        <label class="settings-label" for="settingsBaseUrl">API Base URL</label>
+        <input type="url" id="settingsBaseUrl" class="settings-input"
+               placeholder="https://api.openai.com/v1"
+               value="https://api.openai.com/v1" />
+        <p class="settings-hint">如使用 DeepSeek 填入 <code style="color:var(--primary2)">https://api.deepseek.com/v1</code>，通义千问填入 <code style="color:var(--primary2)">https://dashscope.aliyuncs.com/compatible-mode/v1</code></p>
+      </div>
+      <div class="settings-group">
+        <label class="settings-label" for="settingsModel">模型</label>
+        <select id="settingsModel" class="settings-select">
+          <optgroup label="OpenAI">
+            <option value="gpt-4o-mini">gpt-4o-mini（推荐，快且省钱）</option>
+            <option value="gpt-4o">gpt-4o（能力更强）</option>
+            <option value="gpt-4-turbo">gpt-4-turbo</option>
+            <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+          </optgroup>
+          <optgroup label="DeepSeek">
+            <option value="deepseek-chat">deepseek-chat</option>
+            <option value="deepseek-reasoner">deepseek-reasoner</option>
+          </optgroup>
+          <optgroup label="通义千问">
+            <option value="qwen-plus">qwen-plus</option>
+            <option value="qwen-turbo">qwen-turbo</option>
+            <option value="qwen-max">qwen-max</option>
+          </optgroup>
+          <optgroup label="自定义">
+            <option value="__custom__">自定义模型名…</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="settings-group" id="customModelGroup" style="display:none">
+        <label class="settings-label" for="settingsCustomModel">自定义模型名</label>
+        <input type="text" id="settingsCustomModel" class="settings-input"
+               placeholder="your-model-name" />
+      </div>
+      <div class="settings-group">
+        <label class="settings-label" for="settingsSystemPrompt">系统提示词（System Prompt）</label>
+        <textarea id="settingsSystemPrompt" class="settings-textarea"
+                  placeholder="你是一个有帮助的 AI 助手，请用中文回答用户的问题。"></textarea>
+        <p class="settings-hint">设定 AI 的角色和行为规范。留空使用默认提示词。</p>
+      </div>
+      <div class="settings-group">
+        <label class="settings-label" for="settingsMaxTokens">最大输出 Tokens</label>
+        <select id="settingsMaxTokens" class="settings-select">
+          <option value="1024">1024（简短回复）</option>
+          <option value="2048" selected>2048（默认）</option>
+          <option value="4096">4096（长回复）</option>
+          <option value="8192">8192（超长回复）</option>
+        </select>
+      </div>
+    </div>
+    <div class="settings-footer">
+      <button class="settings-save" id="saveSettings">保存配置</button>
+    </div>
+  </div>
+</div>
+
 <script>
+/* ============================
+   配置存储
+============================ */
+const STORAGE_KEYS = {
+  apiKey:       'aichat_api_key',
+  baseUrl:      'aichat_base_url',
+  model:        'aichat_model',
+  systemPrompt: 'aichat_system_prompt',
+  maxTokens:    'aichat_max_tokens',
+};
+
+function loadConfig() {
+  return {
+    apiKey:       localStorage.getItem(STORAGE_KEYS.apiKey)       || '',
+    baseUrl:      localStorage.getItem(STORAGE_KEYS.baseUrl)      || 'https://api.openai.com/v1',
+    model:        localStorage.getItem(STORAGE_KEYS.model)        || 'gpt-4o-mini',
+    systemPrompt: localStorage.getItem(STORAGE_KEYS.systemPrompt) || '你是一个有帮助的 AI 助手，请用中文回答用户的问题。',
+    maxTokens:    parseInt(localStorage.getItem(STORAGE_KEYS.maxTokens) || '2048', 10),
+  };
+}
+
+function saveConfig(cfg) {
+  localStorage.setItem(STORAGE_KEYS.apiKey,       cfg.apiKey);
+  localStorage.setItem(STORAGE_KEYS.baseUrl,      cfg.baseUrl);
+  localStorage.setItem(STORAGE_KEYS.model,        cfg.model);
+  localStorage.setItem(STORAGE_KEYS.systemPrompt, cfg.systemPrompt);
+  localStorage.setItem(STORAGE_KEYS.maxTokens,    cfg.maxTokens);
+}
+
+let cfg = loadConfig();
+
+/* ============================
+   marked.js 配置
+============================ */
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+  highlight: (code, lang) => {
+    if (lang && hljs.getLanguage(lang)) {
+      try { return hljs.highlight(code, { language: lang }).value; } catch {}
+    }
+    return hljs.highlightAuto(code).value;
+  },
+});
+
+const renderer = new marked.Renderer();
+
+// Helper: escape HTML special characters to prevent XSS from untrusted values (e.g., lang tag)
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+renderer.code = (code, lang) => {
+  const highlighted = (lang && hljs.getLanguage(lang))
+    ? hljs.highlight(code, { language: lang }).value
+    : hljs.highlightAuto(code).value;
+  // lang is sanitized with escapeHtml to prevent XSS via crafted API responses
+  const langLabel = lang ? `<span class="hljs-lang-label">${escapeHtml(lang)}</span>` : '';
+  return `<pre><code class="hljs">${langLabel}${highlighted}</code></pre>`;
+};
+marked.use({ renderer });
+
+/* ============================
+   对话状态
+============================ */
+let messages = [];     // { role: 'user'|'assistant', content: string }
+let isStreaming = false;
+
+/* ============================
+   DOM 引用
+============================ */
+const chatMessages    = document.getElementById('chatMessages');
+const chatInput       = document.getElementById('chatInput');
+const sendBtn         = document.getElementById('sendBtn');
+const clearChatBtn    = document.getElementById('clearChatBtn');
+const chatWelcome     = document.getElementById('chatWelcome');
+const currentModelLabel = document.getElementById('currentModelLabel');
+const charCount       = document.getElementById('charCount');
+const navApiStatus    = document.getElementById('navApiStatus');
+
+/* ============================
+   API Key 状态更新
+============================ */
+function updateApiStatus() {
+  cfg = loadConfig();
+  if (cfg.apiKey) {
+    navApiStatus.className = 'api-status ok';
+    navApiStatus.innerHTML = '<span class="api-dot"></span>API Key 已配置';
+    sendBtn.disabled = false;
+  } else {
+    navApiStatus.className = 'api-status miss';
+    navApiStatus.innerHTML = '<span class="api-dot"></span>未配置 API Key';
+    sendBtn.disabled = true;
+  }
+  currentModelLabel.textContent = cfg.model === '__custom__'
+    ? (localStorage.getItem('aichat_custom_model') || 'custom')
+    : cfg.model;
+}
+updateApiStatus();
+
+/* ============================
+   设置面板
+============================ */
+const overlay        = document.getElementById('settingsOverlay');
+const settingsPanel  = document.getElementById('settingsPanel');
+const closeSettingsBtn  = document.getElementById('closeSettings');
+const saveSettingsBtn   = document.getElementById('saveSettings');
+const settingsModel     = document.getElementById('settingsModel');
+const customModelGroup  = document.getElementById('customModelGroup');
+
+function openSettings() {
+  const c = loadConfig();
+  document.getElementById('settingsApiKey').value       = c.apiKey;
+  document.getElementById('settingsBaseUrl').value      = c.baseUrl || 'https://api.openai.com/v1';
+  document.getElementById('settingsSystemPrompt').value = c.systemPrompt;
+  document.getElementById('settingsMaxTokens').value    = String(c.maxTokens);
+
+  const customModel = localStorage.getItem('aichat_custom_model') || '';
+  const modelOptions = Array.from(settingsModel.options).map(o => o.value);
+  if (modelOptions.includes(c.model)) {
+    settingsModel.value = c.model;
+    customModelGroup.style.display = 'none';
+  } else {
+    settingsModel.value = '__custom__';
+    document.getElementById('settingsCustomModel').value = c.model;
+    customModelGroup.style.display = '';
+  }
+
+  overlay.classList.add('open');
+  document.getElementById('settingsApiKey').focus();
+}
+
+function closeSettings() {
+  overlay.classList.remove('open');
+}
+
+settingsModel.addEventListener('change', () => {
+  customModelGroup.style.display = settingsModel.value === '__custom__' ? '' : 'none';
+});
+
+document.getElementById('openSettings').addEventListener('click', openSettings);
+document.getElementById('heroOpenSettings').addEventListener('click', openSettings);
+document.getElementById('openSettingsChat').addEventListener('click', openSettings);
+closeSettingsBtn.addEventListener('click', closeSettings);
+
+overlay.addEventListener('click', (e) => {
+  if (e.target === overlay) closeSettings();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeSettings();
+});
+
+saveSettingsBtn.addEventListener('click', () => {
+  const apiKey       = document.getElementById('settingsApiKey').value.trim();
+  const baseUrl      = document.getElementById('settingsBaseUrl').value.trim() || 'https://api.openai.com/v1';
+  const rawModel     = settingsModel.value;
+  const customModel  = document.getElementById('settingsCustomModel').value.trim();
+  const model        = rawModel === '__custom__' ? customModel : rawModel;
+  const systemPrompt = document.getElementById('settingsSystemPrompt').value.trim();
+  const maxTokens    = parseInt(document.getElementById('settingsMaxTokens').value, 10);
+
+  if (rawModel === '__custom__') {
+    localStorage.setItem('aichat_custom_model', customModel);
+  }
+
+  saveConfig({ apiKey, baseUrl, model, systemPrompt, maxTokens });
+  updateApiStatus();
+  closeSettings();
+
+  showToast('配置已保存！');
+});
+
+/* ============================
+   Toast 提示
+============================ */
+function showToast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.style.cssText = `
+    position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+    background:${type === 'error' ? 'rgba(248,113,113,0.15)' : 'rgba(34,197,94,0.15)'};
+    border:1px solid ${type === 'error' ? 'rgba(248,113,113,0.4)' : 'rgba(34,197,94,0.4)'};
+    color:${type === 'error' ? '#fca5a5' : '#4ade80'};
+    padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600;
+    z-index:5000;backdrop-filter:blur(8px);
+    animation:fadeUp 0.3s ease both;
+  `;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+/* ============================
+   渲染消息气泡
+============================ */
+function renderMessage(role, content, isStreaming = false) {
+  if (chatWelcome) chatWelcome.remove();
+
+  const msgEl = document.createElement('div');
+  msgEl.className = `msg ${role}`;
+  msgEl.setAttribute('data-role', role);
+
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.setAttribute('aria-hidden', 'true');
+  avatar.textContent = role === 'user' ? '👤' : '🤖';
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+
+  const name = document.createElement('div');
+  name.className = 'msg-name';
+  name.textContent = role === 'user' ? '你' : 'AI 助手';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+
+  if (role === 'assistant') {
+    bubble.innerHTML = content ? DOMPurify.sanitize(marked.parse(content)) : '';
+    if (isStreaming) bubble.setAttribute('data-streaming', 'true');
+  } else {
+    bubble.textContent = content;
+  }
+
+  const meta = document.createElement('div');
+  meta.className = 'msg-meta';
+
+  const ts = document.createElement('span');
+  ts.textContent = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+  if (role === 'assistant') {
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'msg-copy-btn';
+    copyBtn.setAttribute('aria-label', '复制消息');
+    copyBtn.textContent = '复制';
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(bubble.textContent || bubble.innerText || '').then(() => {
+        copyBtn.textContent = '已复制 ✓';
+        setTimeout(() => { copyBtn.textContent = '复制'; }, 2000);
+      });
+    });
+    meta.appendChild(ts);
+    meta.appendChild(copyBtn);
+  } else {
+    meta.appendChild(ts);
+  }
+
+  body.appendChild(name);
+  body.appendChild(bubble);
+  body.appendChild(meta);
+
+  msgEl.appendChild(avatar);
+  msgEl.appendChild(body);
+
+  chatMessages.appendChild(msgEl);
+  scrollToBottom();
+
+  return bubble;
+}
+
+function scrollToBottom() {
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+/* ============================
+   打字指示器
+============================ */
+function showTyping() {
+  const el = document.createElement('div');
+  el.className = 'typing-indicator';
+  el.id = 'typingIndicator';
+  el.innerHTML = `
+    <div class="msg-avatar" aria-hidden="true" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;align-self:flex-start;">🤖</div>
+    <div class="typing-dots" aria-label="AI 正在输入…"><span></span><span></span><span></span></div>
+  `;
+  chatMessages.appendChild(el);
+  scrollToBottom();
+}
+
+function hideTyping() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+/* ============================
+   错误渲染
+============================ */
+function renderError(msg) {
+  const el = document.createElement('div');
+  el.className = 'chat-error';
+  el.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span>${msg}</span>
+  `;
+  chatMessages.appendChild(el);
+  scrollToBottom();
+}
+
+/* ============================
+   发送消息 & 调用 API（流式）
+============================ */
+async function sendMessage() {
+  const text = chatInput.value.trim();
+  if (!text || isStreaming) return;
+
+  cfg = loadConfig();
+  if (!cfg.apiKey) {
+    openSettings();
+    showToast('请先配置 API Key', 'error');
+    return;
+  }
+
+  isStreaming = true;
+  sendBtn.disabled = true;
+  chatInput.value = '';
+  chatInput.style.height = '';
+  charCount.textContent = '0 / 4000';
+
+  messages.push({ role: 'user', content: text });
+  renderMessage('user', text);
+
+  showTyping();
+
+  const payload = {
+    model:       cfg.model,
+    stream:      true,
+    max_tokens:  cfg.maxTokens,
+    messages: [
+      { role: 'system', content: cfg.systemPrompt || '你是一个有帮助的 AI 助手。' },
+      ...messages,
+    ],
+  };
+
+  let aiBubble = null;
+  let aiText = '';
+
+  try {
+    const res = await fetch(`${cfg.baseUrl.replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cfg.apiKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      let errMsg = `HTTP ${res.status}`;
+      try {
+        const errData = await res.json();
+        errMsg = errData.error?.message || errMsg;
+      } catch {}
+      throw new Error(errMsg);
+    }
+
+    hideTyping();
+    aiBubble = renderMessage('assistant', '', true);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === 'data: [DONE]') continue;
+        if (!trimmed.startsWith('data: ')) continue;
+
+        try {
+          const data = JSON.parse(trimmed.slice(6));
+          const delta = data.choices?.[0]?.delta?.content;
+          if (delta) {
+            aiText += delta;
+            aiBubble.innerHTML = DOMPurify.sanitize(marked.parse(aiText));
+            // Apply syntax highlighting to new code blocks
+            aiBubble.querySelectorAll('pre code:not(.hljs-highlighted)').forEach(block => {
+              block.classList.add('hljs-highlighted');
+              hljs.highlightElement(block);
+            });
+            scrollToBottom();
+          }
+        } catch {}
+      }
+    }
+
+    // Final render with full content
+    if (aiBubble) {
+      aiBubble.innerHTML = DOMPurify.sanitize(marked.parse(aiText));
+      // Only highlight blocks not yet processed (avoids redundant work from streaming phase)
+      aiBubble.querySelectorAll('pre code:not(.hljs-highlighted)').forEach(block => {
+        block.classList.add('hljs-highlighted');
+        hljs.highlightElement(block);
+      });
+      aiBubble.removeAttribute('data-streaming');
+    }
+
+    if (aiText) {
+      messages.push({ role: 'assistant', content: aiText });
+    }
+
+  } catch (err) {
+    hideTyping();
+    if (aiBubble && !aiText) {
+      const msgEl = aiBubble.closest('.msg');
+      if (msgEl) msgEl.remove();
+    }
+    renderError(`请求失败：${err.message}。请检查 API Key 和 Base URL 是否正确。`);
+    // Note: the user message stays in messages[] so the next retry has correct context.
+    // Only remove the assistant message if it was partially added (handled above via aiBubble).
+  } finally {
+    isStreaming = false;
+    sendBtn.disabled = !cfg.apiKey;
+    scrollToBottom();
+  }
+}
+
+/* ============================
+   输入框事件
+============================ */
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+chatInput.addEventListener('input', () => {
+  // 自动高度
+  chatInput.style.height = '';
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 180) + 'px';
+  // 字数
+  const len = chatInput.value.length;
+  charCount.textContent = `${len} / 4000`;
+  charCount.style.color = len > 3800 ? '#f87171' : '';
+});
+
+sendBtn.addEventListener('click', sendMessage);
+
+/* ============================
+   清空对话
+============================ */
+clearChatBtn.addEventListener('click', () => {
+  messages = [];
+  chatMessages.innerHTML = '';
+  const welcome = document.createElement('div');
+  welcome.id = 'chatWelcome';
+  welcome.className = 'chat-welcome';
+  welcome.innerHTML = `
+    <div class="chat-welcome-icon">💬</div>
+    <h3>对话已清空</h3>
+    <p>开始一段新的对话吧！</p>
+  `;
+  chatMessages.appendChild(welcome);
+});
+
 /* ============================
    导航栏滚动效果
 ============================ */
-const navbar = document.getElementById('navbar');
-const backTop = document.getElementById('back-top');
+const navbar   = document.getElementById('navbar');
+const backTop  = document.getElementById('back-top');
 const progressBar = document.getElementById('progress-bar');
 
 window.addEventListener('scroll', () => {
   const scrollY = window.scrollY;
   const docH = document.documentElement.scrollHeight - window.innerHeight;
-
-  // 导航栏
   navbar.classList.toggle('scrolled', scrollY > 20);
-
-  // 回到顶部
   backTop.classList.toggle('show', scrollY > 400);
-
-  // 进度条
-  progressBar.style.width = (scrollY / docH * 100) + '%';
-});
+  progressBar.style.width = (docH > 0 ? scrollY / docH * 100 : 0) + '%';
+}, { passive: true });
 
 backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
 /* ============================
    汉堡菜单（移动端）
-   来源：ui-ux-pro-max UX rule: Hover vs Tap（tap events，CSS class 驱动）
 ============================ */
 const hamburger = document.getElementById('hamburger');
-const navLinks = document.getElementById('navLinks');
+const navLinks  = document.getElementById('navLinks');
 
 hamburger.addEventListener('click', () => {
   const isOpen = navLinks.classList.toggle('mobile-open');
   hamburger.setAttribute('aria-expanded', isOpen);
 });
 
-// 点击导航链接后收起菜单
 navLinks.addEventListener('click', (e) => {
   if (e.target.tagName === 'A') {
     navLinks.classList.remove('mobile-open');
@@ -1475,7 +1606,6 @@ navLinks.addEventListener('click', (e) => {
   }
 });
 
-// 点击菜单外区域收起
 document.addEventListener('click', (e) => {
   if (!navbar.contains(e.target)) {
     navLinks.classList.remove('mobile-open');
@@ -1484,11 +1614,10 @@ document.addEventListener('click', (e) => {
 });
 
 /* ============================
-   导航链接 Active 滚动高亮（Scroll Spy）
-   来源：ui-ux-pro-max active state rule
+   导航链接 Scroll Spy
 ============================ */
 const navAnchors = document.querySelectorAll('.nav-links a[href^="#"]');
-const sections = Array.from(navAnchors)
+const sections   = Array.from(navAnchors)
   .map(a => document.querySelector(a.getAttribute('href')))
   .filter(Boolean);
 
@@ -1506,30 +1635,12 @@ window.addEventListener('scroll', updateActiveNav, { passive: true });
 updateActiveNav();
 
 /* ============================
-   数字滚动动画
-============================ */
-function animateNumber(el) {
-  const target = parseInt(el.dataset.target, 10);
-  const duration = 1800;
-  const step = 16;
-  const increment = target / (duration / step);
-  let current = 0;
-  const timer = setInterval(() => {
-    current = Math.min(current + increment, target);
-    el.textContent = Math.floor(current).toLocaleString('zh-CN');
-    if (current >= target) clearInterval(timer);
-  }, step);
-}
-
-/* ============================
    Intersection Observer — 滚动显现
 ============================ */
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
       entry.target.classList.add('visible');
-      // 数字动画
-      entry.target.querySelectorAll('[data-target]').forEach(animateNumber);
       observer.unobserve(entry.target);
     }
   });
@@ -1537,105 +1648,20 @@ const observer = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-// Hero stats 单独处理（不在 reveal 内）
-const heroObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      document.querySelectorAll('.stat-value[data-target]').forEach(animateNumber);
-      heroObserver.disconnect();
-    }
-  });
-}, { threshold: 0.3 });
-const heroStats = document.querySelector('.hero-stats');
-if (heroStats) heroObserver.observe(heroStats);
-
 /* ============================
-   路线图进度条动画
+   hljs 额外样式（lang label overlay）
 ============================ */
-const progressObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.querySelectorAll('.phase-progress-bar').forEach(bar => {
-        const w = bar.style.width;
-        bar.style.width = '0%';
-        setTimeout(() => { bar.style.width = w; }, 100);
-      });
-      progressObserver.unobserve(entry.target);
-    }
-  });
-}, { threshold: 0.2 });
-document.querySelectorAll('.phase-card').forEach(card => progressObserver.observe(card));
-
-/* ============================
-   Chart.js — Stars 增长趋势
-============================ */
-const ctx = document.getElementById('starsChart').getContext('2d');
-
-const labels = ['2023-11','2023-12','2024-01','2024-02','2024-03','2024-04',
-                 '2024-05','2024-06','2024-07','2024-08','2024-09','2024-10','2024-11'];
-const data   = [12, 98, 280, 510, 720, 940, 1230, 1480, 1720, 1980, 2250, 2520, 2800];
-
-const gradient = ctx.createLinearGradient(0, 0, 0, 240);
-gradient.addColorStop(0, 'rgba(108,99,255,0.35)');
-gradient.addColorStop(1, 'rgba(108,99,255,0)');
-
-new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels,
-    datasets: [{
-      label: 'Stars',
-      data,
-      borderColor: '#6c63ff',
-      borderWidth: 2.5,
-      backgroundColor: gradient,
-      fill: true,
-      tension: 0.45,
-      pointBackgroundColor: '#6c63ff',
-      pointBorderColor: '#0a0e1a',
-      pointBorderWidth: 2,
-      pointRadius: 4,
-      pointHoverRadius: 7,
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { intersect: false, mode: 'index' },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(15,21,40,0.95)',
-        borderColor: 'rgba(108,99,255,0.3)',
-        borderWidth: 1,
-        titleColor: '#a78bfa',
-        bodyColor: '#e8eaf0',
-        padding: 12,
-        callbacks: {
-          label: (ctx) => ` ⭐ ${ctx.parsed.y.toLocaleString()} Stars`
-        }
-      }
-    },
-    scales: {
-      x: {
-        grid: { color: 'rgba(255,255,255,0.04)' },
-        ticks: {
-          color: '#8892a4',
-          font: { size: 11 },
-          maxTicksLimit: 7
-        }
-      },
-      y: {
-        grid: { color: 'rgba(255,255,255,0.04)' },
-        ticks: {
-          color: '#8892a4',
-          font: { size: 11 },
-          callback: v => v >= 1000 ? (v/1000).toFixed(1)+'k' : v
-        }
-      }
-    }
+const hljsStyle = document.createElement('style');
+hljsStyle.textContent = `
+  .msg-bubble pre { position: relative; }
+  .hljs-lang-label {
+    position: absolute; top: 8px; right: 12px;
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.3);
+    text-transform: uppercase; letter-spacing: 0.05em; font-family: inherit;
   }
-});
+  .msg-bubble pre code { padding-top: 28px; }
+`;
+document.head.appendChild(hljsStyle);
 </script>
 </body>
 </html>
