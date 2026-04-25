@@ -47,6 +47,7 @@ This table defines which files are linked. Whenever you change a file in the **C
 | `docs/agent-architecture.md` | this Interconnection Map · `MEMORY.md` Standing Context |
 | `memory/audit/README.md` | `scripts/append_audit.py` (row schema must match) |
 | Any task completed | `MEMORY.md` Task Log |
+| `docs/agent-cognitive-architecture.md` | `MEMORY.md` Standing Context `docs/agent-architecture.md`(交叉引用) |
 
 ---
 
