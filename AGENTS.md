@@ -39,8 +39,13 @@ This table defines which files are linked. Whenever you change a file in the **C
 | `.agents/skills/README.md` | `AGENTS.md` Skills section · `MEMORY.md` Standing Context |
 | `AGENTS.md` (workflow, structure, or rules) | `MEMORY.md` (if it references those conventions) |
 | `MEMORY.md` (structure change) | `AGENTS.md` Memory Structure table |
-| `.github/workflows/*.yml` (add/remove workflow) | `MEMORY.md` Standing Context if it's a standing convention |
+| `.github/workflows/*.yml` (add/remove workflow) | `MEMORY.md` Standing Context if it's a standing convention · `policies/permissions.md` |
 | `index.html` (significant UI change) | `MEMORY.md` Task Log |
+| `prompts/*` | `scripts/run_skill.py` · `.agents/skills/*/skill.md` (if templated) |
+| `policies/*` | `.github/workflows/dispatcher.yml` · `scripts/append_audit.py` |
+| `scripts/*` | `docs/agent-architecture.md` · `.github/workflows/dispatcher.yml` |
+| `docs/agent-architecture.md` | this Interconnection Map · `MEMORY.md` Standing Context |
+| `memory/audit/README.md` | `scripts/append_audit.py` (row schema must match) |
 | Any task completed | `MEMORY.md` Task Log |
 
 ---
@@ -65,6 +70,30 @@ cat .agents/skills/README.md  # read the full index and conventions
 1. Identify the skill ID from the index.
 2. Read its `skill.md`.
 3. Follow the **Steps** section; record results per the **Outputs** section.
+
+---
+
+## Dispatcher
+
+All AI actions enter through `.github/workflows/dispatcher.yml`.
+Triggers: issue comment, issue opened/labeled, PR opened/synchronize.
+Slash commands: `/summarize`, `/plan`, `/review`, `/memory-write`, `/skill <id>`.
+
+The dispatcher delegates to two scripts:
+
+- `scripts/route.py` — parses the event, validates the command against the skill whitelist, emits `(skill, args, proceed)`.
+- `scripts/run_skill.py` — composes the three-part prompt (system + safety + skill), calls the model, writes `.agent-run/output.md`.
+- `scripts/append_audit.py` — pre-flights the daily token budget and records every run in `memory/audit/YYYY-MM-DD.md`.
+
+See `docs/agent-architecture.md` for the full Phase 1 blueprint.
+
+## Policies
+
+- `policies/prompt-safety.md` — untrusted-input handling and red-flag phrases.
+- `policies/budget.md` — daily token cap (enforced by `append_audit.py --phase check`).
+- `policies/permissions.md` — workflow permission matrix and external network allowlist.
+
+Any change to a skill, prompt, or policy must be reflected in the Interconnection Map above.
 
 ---
 

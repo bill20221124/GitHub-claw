@@ -46,6 +46,26 @@ cat .agents/skills/<skill-name>/skill.md
 
 ### `skill.md` Template
 
+Every skill file MUST start with a YAML front-matter block:
+
+```yaml
+---
+id: <kebab-case-skill-id>         # must match directory name
+triggers:                         # slash commands or labels that activate
+  commands: ["/<name>"]
+  labels:   []
+inputs:                           # JSON-schema-ish, documentation only in Phase 1
+  issue_or_pr_body: string
+  args: string
+outputs:
+  format: markdown
+  sections: [Summary, Details]
+model_tier: simple                # simple | complex
+---
+```
+
+Followed by the prose sections:
+
 ```markdown
 # Skill: <Name>
 
@@ -65,6 +85,9 @@ Numbered procedure the agent follows when executing this skill.
 What the agent produces or returns after running this skill.
 ```
 
+A ready-made starter lives at `.agents/skills/_template/skill.md` — copy that
+directory and rename it to your new skill ID.
+
 ---
 
 ## Using a Skill
@@ -80,5 +103,11 @@ What the agent produces or returns after running this skill.
 
 | Skill ID   | Purpose |
 |------------|---------|
-| [summarize](./summarize/skill.md) | Summarize a file, PR, or issue into a concise set of bullet points. |
+| [summarize](./summarize/skill.md) | Summarize a file, PR, or issue into TL;DR + Key Points + Open Questions. |
+| [plan](./plan/skill.md) | Decompose a coarse goal into a reviewable, ordered checklist. |
+| [review](./review/skill.md) | Critical review of a pull request's diff with actionable feedback. |
+| [memory-write](./memory-write/skill.md) | Propose a `MEMORY.md` patch that fossilises a concluded discussion. |
 | [ui-ux-pro-max](./ui-ux-pro-max/skill.md) | AI-powered design intelligence: 67 styles, 161 color palettes, 57 font pairings, 99 UX guidelines, 25 chart types across 16 stacks. Installed via `uipro-cli`. |
+
+> Directory names beginning with `_` (e.g. `_template`) are scaffolding, not real skills,
+> and are excluded from the dispatcher's whitelist.

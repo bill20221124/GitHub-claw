@@ -1,0 +1,103 @@
+# Single-entry dispatcher for all AI agent actions.
+# See docs/agent-architecture.md §2.2 for the full design.
+name: Agent Dispatcher
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened, labeled]
+  pull_request_target:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  models: read
+
+concurrency:
+  group: dispatcher-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  route:
+    # Ignore events from bots to avoid feedback loops.
+    if: github.event.sender.type != 'Bot'
+    runs-on: ubuntu-latest
+    outputs:
+      skill:   ${{ steps.parse.outputs.skill }}
+      args:    ${{ steps.parse.outputs.args }}
+      proceed: ${{ steps.parse.outputs.proceed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - id: parse
+        name: Parse slash command
+        env:
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+        run: python scripts/route.py
+
+  run:
+    needs: route
+    if: needs.route.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Budget pre-flight
+        id: budget
+        continue-on-error: true
+        run: |
+          python scripts/append_audit.py \
+            --phase check \
+            --skill "${{ needs.route.outputs.skill }}"
+
+      - name: Refuse on budget exhaustion
+        if: steps.budget.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" \
+            --body $'/!\\ refused: today\'s token quota is exhausted (see policies/budget.md).'
+
+      - name: Invoke skill
+        if: steps.budget.outcome == 'success'
+        env:
+          SKILL: ${{ needs.route.outputs.skill }}
+          ARGS:  ${{ needs.route.outputs.args }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}  # optional, complex tier
+        run: python scripts/run_skill.py
+
+      - name: Post result
+        if: steps.budget.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+        run: |
+          if [ -f .agent-run/output.md ]; then
+            gh issue comment "$ISSUE_NUMBER" --body-file .agent-run/output.md
+          else
+            echo "No output produced — skipping comment."
+          fi
+
+      - name: Append audit row
+        if: always()
+        run: |
+          python scripts/append_audit.py \
+            --phase finish \
+            --skill "${{ needs.route.outputs.skill }}" \
+            --status "${{ job.status }}"
