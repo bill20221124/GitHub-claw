@@ -31,6 +31,7 @@ It stores role definitions, memories, and working artifacts so that context surv
 - Policies in `policies/` define safety, budget, and the workflow permission matrix.
 - Audit logs in `memory/audit/YYYY-MM-DD.md` (row schema in `memory/audit/README.md`).
 - Phase 1 architecture blueprint: `docs/agent-architecture.md` (single source of truth for the agent design).
+- Inter-agent collaboration protocol: `AGENT-COLLAB.md`. @Architect (Claude) 与 @Copilot (GitHub Copilot) 通过此文件异步协作,所有 ticket / decision / question 三类信息分区落档
 
 ---
 
@@ -53,6 +54,7 @@ The following files are linked — changing one requires checking the others:
 | `memory/audit/README.md` | `scripts/append_audit.py` (row schema must match) |
 | Any task completed | `MEMORY.md` Task Log |
 | `docs/agent-cognitive-architecture.md` | `MEMORY.md` Standing Context `docs/agent-architecture.md`(交叉引用) |
+| `AGENT-COLLAB.md` | `AGENTS.md` Interconnection Map · `MEMORY.md` Standing Context |
 
 ---
 

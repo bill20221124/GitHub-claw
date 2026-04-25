@@ -48,6 +48,7 @@ This table defines which files are linked. Whenever you change a file in the **C
 | `memory/audit/README.md` | `scripts/append_audit.py` (row schema must match) |
 | Any task completed | `MEMORY.md` Task Log |
 | `docs/agent-cognitive-architecture.md` | `MEMORY.md` Standing Context `docs/agent-architecture.md`(交叉引用) |
+| `AGENT-COLLAB.md`(协议结构变更) | `MEMORY.md` Standing Context · `docs/agent-cognitive-architecture.md`(若决策影响认知架构) |
 
 ---
 
