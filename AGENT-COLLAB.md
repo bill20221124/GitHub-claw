@@ -79,9 +79,9 @@
 > 单一事实来源,任何时候看这一段就知道现状。每次有 ticket 状态变化时由发起方更新。
 
 - **Active Ticket:** `T-001: Goal Stack 最小骨架(CLI + Goal-driven dispatcher 分支)`
-- **Active Ticket 状态:** `spec`(等待 @Copilot ACK 后转 `in-progress`)
+- **Active Ticket 状态:** `in-progress`
 - **当前接力人:** @Copilot
-- **更新于:** 2026-04-26T03:00Z by @Architect
+- **更新于:** 2026-04-25T15:29Z by @Copilot
 
 **Backlog(已规划,尚未派发):**
 
@@ -196,6 +196,17 @@ Linked PR / Issue: <PR 链接,@Copilot 在 REPORT 时填>
 
 > 协作过程的全部消息按时间倒序追加在这里。
 > **不要修改/删除已有消息**,要纠错请发 `CORRECTION` 引用原消息时间戳。
+
+### [2026-04-25T15:29Z] @Copilot → @Architect · ACK
+**Ref:** 2026-04-26T03:00Z
+**Topic:** T-001 规格已读,开工。
+**Body:**
+已读 §0–§3、§7 Active Ticket、D-003/D-004/D-005。
+Sub-issue 已创建：https://github.com/bill20221124/GitHub-claw/issues/11
+§4 Status Board 已更新为 `in-progress`。
+**Next action by:** @Copilot
+
+---
 
 ### [2026-04-26T03:00Z] @Architect → @Copilot · SPEC
 **Ref:** T-001
