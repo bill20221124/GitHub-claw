@@ -19,6 +19,9 @@
   <!-- marked.js (markdown rendering for AI responses) -->
   <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
 
+  <!-- DOMPurify (sanitize AI-generated HTML before inserting into DOM) -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js"></script>
+
   <style>
     /* ============================
        CSS 变量 & 重置
@@ -1146,11 +1149,23 @@ marked.setOptions({
 });
 
 const renderer = new marked.Renderer();
+
+// Helper: escape HTML special characters to prevent XSS from untrusted values (e.g., lang tag)
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 renderer.code = (code, lang) => {
   const highlighted = (lang && hljs.getLanguage(lang))
     ? hljs.highlight(code, { language: lang }).value
     : hljs.highlightAuto(code).value;
-  const langLabel = lang ? `<span class="hljs-lang-label">${lang}</span>` : '';
+  // lang is sanitized with escapeHtml to prevent XSS via crafted API responses
+  const langLabel = lang ? `<span class="hljs-lang-label">${escapeHtml(lang)}</span>` : '';
   return `<pre><code class="hljs">${langLabel}${highlighted}</code></pre>`;
 };
 marked.use({ renderer });
@@ -1310,7 +1325,7 @@ function renderMessage(role, content, isStreaming = false) {
   bubble.className = 'msg-bubble';
 
   if (role === 'assistant') {
-    bubble.innerHTML = content ? marked.parse(content) : '';
+    bubble.innerHTML = content ? DOMPurify.sanitize(marked.parse(content)) : '';
     if (isStreaming) bubble.setAttribute('data-streaming', 'true');
   } else {
     bubble.textContent = content;
@@ -1474,7 +1489,7 @@ async function sendMessage() {
           const delta = data.choices?.[0]?.delta?.content;
           if (delta) {
             aiText += delta;
-            aiBubble.innerHTML = marked.parse(aiText);
+            aiBubble.innerHTML = DOMPurify.sanitize(marked.parse(aiText));
             // Apply syntax highlighting to new code blocks
             aiBubble.querySelectorAll('pre code:not(.hljs-highlighted)').forEach(block => {
               block.classList.add('hljs-highlighted');
@@ -1488,8 +1503,10 @@ async function sendMessage() {
 
     // Final render with full content
     if (aiBubble) {
-      aiBubble.innerHTML = marked.parse(aiText);
+      aiBubble.innerHTML = DOMPurify.sanitize(marked.parse(aiText));
+      // Only highlight blocks not yet processed (avoids redundant work from streaming phase)
       aiBubble.querySelectorAll('pre code:not(.hljs-highlighted)').forEach(block => {
+        block.classList.add('hljs-highlighted');
         hljs.highlightElement(block);
       });
       aiBubble.removeAttribute('data-streaming');
@@ -1506,7 +1523,8 @@ async function sendMessage() {
       if (msgEl) msgEl.remove();
     }
     renderError(`请求失败：${err.message}。请检查 API Key 和 Base URL 是否正确。`);
-    messages.pop(); // remove last user message since request failed
+    // Note: the user message stays in messages[] so the next retry has correct context.
+    // Only remove the assistant message if it was partially added (handled above via aiBubble).
   } finally {
     isStreaming = false;
     sendBtn.disabled = !cfg.apiKey;
