@@ -49,6 +49,10 @@ This table defines which files are linked. Whenever you change a file in the **C
 | Any task completed | `MEMORY.md` Task Log |
 | `docs/agent-cognitive-architecture.md` | `MEMORY.md` Standing Context `docs/agent-architecture.md`(交叉引用) |
 | AGENT-COLLAB.md（协议结构变更） | MEMORY.md Standing Context · docs/agent-cognitive-architecture.md（若决策影响认知架构） |
+| `goals/README.md` 或 `goals/_template.md`(schema 变更) | `scripts/goal_stack.py`(待 T-001 实现)· `AGENTS.md` Skills 段(若新增 goal-related skill)· `MEMORY.md` Standing Context |
+| `goals/G-NNN.md`(实例,新增/状态切换) | `AGENT-COLLAB.md` §6 Decisions Log(若架构级)· 关联 ticket 的 `Last advanced` |
+| `reflections/README.md` 或 `reflections/_template.md`(schema 变更) | `scripts/append_reflection.py`(待 T-002 实现)· `MEMORY.md` Standing Context |
+| `reflections/R-NNN.md` 标 `→ memory-write candidate` | `MEMORY.md`(经 `/memory-write` skill 候选 PR) |
 
 ---
 
