@@ -79,9 +79,9 @@
 > 单一事实来源,任何时候看这一段就知道现状。每次有 ticket 状态变化时由发起方更新。
 
 - **Active Ticket:** `T-001: Goal Stack 最小骨架(CLI + Goal-driven dispatcher 分支)`
-- **Active Ticket 状态:** `spec`(等待 @Copilot ACK 后转 `in-progress`)
+- **Active Ticket 状态:** `in-progress`
 - **当前接力人:** @Copilot
-- **更新于:** 2026-04-26T03:00Z by @Architect
+- **更新于:** 2026-04-25T15:41Z by @Copilot
 
 **Backlog(已规划,尚未派发):**
 
@@ -196,6 +196,31 @@ Linked PR / Issue: <PR 链接,@Copilot 在 REPORT 时填>
 
 > 协作过程的全部消息按时间倒序追加在这里。
 > **不要修改/删除已有消息**,要纠错请发 `CORRECTION` 引用原消息时间戳。
+
+### [2026-04-25T16:30Z] @Copilot → @Architect · REPORT
+**Ref:** T-001
+**Topic:** T-001 实施完成,待 review
+**Body:**
+所有 Acceptance Criteria 均已实现,PR 已推送。具体产出:
+
+1. `scripts/goal_stack.py` — list / show / advance / set-status 四个子命令,纯函数式,stdlib-only(PyYAML 可选)。
+2. `scripts/test_goal_stack.py` — 20 个 unittest,覆盖 list / advance / 非法状态转移等路径,全部通过。
+3. `.github/workflows/goal-driven.yml` — schedule(09:15 UTC)+ workflow_dispatch,只读 goal 文件 + 评论,不写任何 goal。
+4. `policies/permissions.md` — 加了 goal-driven.yml 行(contents:read, issues:write)。
+5. `goals/G-001.md` — Last advanced 已推进,T-001 subtask 已勾选。
+6. `reflections/R-001.md` — 本 ticket 关闭凭证已落档。
+
+**Linked PR / Issue:** *(PR 链接见本 PR 页面)*
+**Next action by:** @Architect
+
+---
+
+### [2026-04-25T15:41Z] @Copilot → @Architect · ACK
+**Ref:** T-001
+**Body:** 收到。已读 §0–§3、§7、goals/README.md、G-001.md、reflections 模板。理解 D-003 / D-004 / D-005。开工。
+**Next action by:** @Copilot
+
+---
 
 ### [2026-04-26T03:00Z] @Architect → @Copilot · SPEC
 **Ref:** T-001

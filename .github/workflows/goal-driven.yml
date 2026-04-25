@@ -1,0 +1,174 @@
+# Goal-driven daily reminder workflow.
+# Reads all goals/G-*.md, finds the most pressing in-progress goal,
+# and posts a reminder comment on its linked issue/PR (if one exists).
+# See AGENT-COLLAB.md §7 (T-001) for full specification.
+name: Goal-Driven Daily Reminder
+
+on:
+  schedule:
+    - cron: '15 9 * * *'   # 09:15 UTC ≈ local 17:15 (CST)
+  workflow_dispatch:         # allow manual trigger
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Find and remind today's goal
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<'PYEOF'
+          import os
+          import re
+          import subprocess
+          import sys
+          from datetime import date, datetime
+
+          GOALS_DIR = 'goals'
+          COLLAB_FILE = 'AGENT-COLLAB.md'
+
+
+          # ------------------------------------------------------------------
+          # Helpers
+          # ------------------------------------------------------------------
+
+          def parse_front_matter(text):
+              """Parse YAML front-matter; returns dict (no external deps)."""
+              m = re.match(r'^---\n(.*?)\n---\n', text, re.DOTALL)
+              if not m:
+                  return {}
+              fm = {}
+              for line in m.group(1).splitlines():
+                  if ':' not in line:
+                      continue
+                  k, _, v = line.partition(':')
+                  k, v = k.strip(), v.strip()
+                  if v.startswith('[') and v.endswith(']'):
+                      fm[k] = [x.strip() for x in v[1:-1].split(',') if x.strip()]
+                  else:
+                      fm[k] = v
+              return fm
+
+
+          def load_goals(goals_dir):
+              pattern = re.compile(r'^G-\d+\.md$')
+              goals = []
+              for fn in sorted(os.listdir(goals_dir)):
+                  if pattern.match(fn):
+                      with open(os.path.join(goals_dir, fn), encoding='utf-8') as fh:
+                          text = fh.read()
+                      fm = parse_front_matter(text)
+                      goals.append(fm)
+              return goals
+
+
+          def days_since(date_str):
+              """Return days since date_str (YYYY-MM-DD), or '?' on parse error."""
+              try:
+                  d = datetime.strptime(str(date_str), '%Y-%m-%d').date()
+                  return (date.today() - d).days
+              except (ValueError, TypeError):
+                  return '?'
+
+
+          def pick_top_goal(goals):
+              """Return the single most-pressing in-progress goal, or None."""
+              active = [g for g in goals if g.get('status') == 'in-progress']
+              if not active:
+                  return None
+              prio_order = {'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3}
+
+              def sort_key(g):
+                  prio = prio_order.get(g.get('priority', 'P3'), 3)
+                  # Oldest updated date should come first (most stale = most urgent)
+                  updated = str(g.get('updated', '1970-01-01'))
+                  return (prio, updated)
+
+              active.sort(key=sort_key)
+              return active[0]
+
+
+          def find_linked_issue(collab_text, ticket_id):
+              """Extract the issue/PR number linked to ticket_id in AGENT-COLLAB.md."""
+              # Look for the ticket block and its "Linked PR / Issue:" line
+              pattern = re.compile(
+                  rf'Ticket ID:\s+{re.escape(ticket_id)}.*?Linked PR / Issue:\s*(#\d+|https?://\S+)',
+                  re.DOTALL,
+              )
+              m = pattern.search(collab_text)
+              if not m:
+                  return None
+              ref = m.group(1).strip()
+              num_m = re.search(r'(\d+)', ref)
+              return num_m.group(1) if num_m else None
+
+
+          def post_comment(issue_num, message):
+              """Post *message* to issue or PR *issue_num* via gh CLI."""
+              for sub in ('issue', 'pr'):
+                  result = subprocess.run(
+                      ['gh', sub, 'comment', issue_num, '--body', message],
+                      capture_output=True, text=True,
+                  )
+                  if result.returncode == 0:
+                      print(f"Posted reminder to {sub} #{issue_num}")
+                      return True
+              print(f"warning: could not post to issue or PR #{issue_num}", file=sys.stderr)
+              return False
+
+
+          # ------------------------------------------------------------------
+          # Main logic
+          # ------------------------------------------------------------------
+
+          goals = load_goals(GOALS_DIR)
+          top = pick_top_goal(goals)
+
+          if top is None:
+              print("No in-progress goals found. Nothing to do.")
+              sys.exit(0)
+
+          gid    = top.get('id', '?')
+          gtitle = top.get('title', '?')
+          stale  = days_since(top.get('updated'))
+
+          tickets = top.get('related_tickets', [])
+          if not tickets:
+              print(f"Goal {gid} has no related_tickets. Skipping comment.")
+              sys.exit(0)
+
+          target_ticket = tickets[0]
+
+          if not os.path.isfile(COLLAB_FILE):
+              print(f"warning: {COLLAB_FILE} not found. Skipping comment.")
+              sys.exit(0)
+
+          with open(COLLAB_FILE, encoding='utf-8') as fh:
+              collab_text = fh.read()
+
+          issue_num = find_linked_issue(collab_text, target_ticket)
+          if not issue_num:
+              print(
+                  f"No linked issue/PR found for {target_ticket} in {COLLAB_FILE}. "
+                  "Skipping comment (will retry once PR is linked)."
+              )
+              sys.exit(0)
+
+          message = (
+              f"Today's reminder: {gid} — {gtitle} "
+              f"已 {stale} 天未推进，可考虑跟进 {target_ticket}"
+          )
+          print(f"Reminder message: {message}")
+          post_comment(issue_num, message)
+          PYEOF
