@@ -30,8 +30,11 @@ It stores role definitions, memories, and working artifacts so that context surv
 - Prompt templates live in `prompts/` (`system.md` / `safety.md` / `skill-wrapper.md`).
 - Policies in `policies/` define safety, budget, and the workflow permission matrix.
 - Audit logs in `memory/audit/YYYY-MM-DD.md` (row schema in `memory/audit/README.md`).
-- Phase 1 architecture blueprint: `docs/agent-architecture.md` (single source of truth for the agent design).
-- Inter-agent collaboration protocol: `AGENT-COLLAB.md`. @Architect (Claude) 与 @Copilot (GitHub Copilot) 通过此文件异步协作,所有 ticket / decision / question 三类信息分区落档
+- Phase 1 architecture blueprint: `docs/agent-architecture.md` (engineering-layer source of truth).
+- Phase 2+ cognitive architecture: `docs/agent-cognitive-architecture.md` (cognitive-layer source of truth — Goal Stack, layered memory, reflection loop, working set, three trigger modes, three cognitive modes, three collaboration tiers).
+- Goal Stack lives in `goals/G-NNN.md`; schema in `goals/README.md`; first concrete goal is `goals/G-001.md` (implement Phase 2 minimum viable set).
+- Reflection log lives in `reflections/R-NNN.md`; schema in `reflections/README.md`; written after every skill run (post T-002).
+- Inter-agent collaboration protocol: `AGENT-COLLAB.md`. @Architect (Claude) 负责规格 / 决策 / 审查;@Copilot (GitHub Copilot) 负责按规格实施。Ticket / Decision / Question 三类信息严格分区。
 
 ---
 
@@ -55,6 +58,10 @@ The following files are linked — changing one requires checking the others:
 | Any task completed | `MEMORY.md` Task Log |
 | `docs/agent-cognitive-architecture.md` | `MEMORY.md` Standing Context `docs/agent-architecture.md`(交叉引用) |
 | `AGENT-COLLAB.md` | `AGENTS.md` Interconnection Map · `MEMORY.md` Standing Context |
+| `goals/README.md` 或 `_template.md` (schema) | `scripts/goal_stack.py` · `MEMORY.md` Standing Context |
+| `goals/G-NNN.md` (实例) | `AGENT-COLLAB.md` §6 (若架构级决策) · 关联 ticket |
+| `reflections/README.md` 或 `_template.md` (schema) | `scripts/append_reflection.py` · `MEMORY.md` Standing Context |
+| `reflections/R-NNN.md` 标 `memory-write candidate` | `MEMORY.md` (经 `/memory-write` 候选 PR) |
 
 ---
 
@@ -68,3 +75,6 @@ The following files are linked — changing one requires checking the others:
 | 2026-04-24 | Wrote Phase 1 architecture blueprint: `docs/agent-architecture.md`. Defines dispatcher single-entry, three-part prompt, four core skills (`summarize`/`plan`/`review`/`memory-write`), policies, and audit log. |
 | 2026-04-25 | Implemented Phase 1 blueprint end-to-end: created `prompts/`, `policies/`, `scripts/route.py`, `scripts/run_skill.py`, `scripts/append_audit.py`, `.github/workflows/dispatcher.yml`, `memory/audit/README.md`; added `_template/`, `plan/`, `review/`, `memory-write/` skills; upgraded `summarize` and `.agents/skills/README.md` to the new YAML-front-matter protocol; extended `validate-skills.yml` to enforce required keys; updated `AGENTS.md` with Dispatcher and Policies sections and extended both Interconnection Maps. |
 | 2026-04-25 | Transformed `index.html` from static "AI Guide" knowledge base to a fully functional AI interactive chat website. Features: OpenAI-compatible streaming chat, localStorage API Key/BaseURL/model/system-prompt config, Markdown+code-highlight rendering, settings panel, multi-model support (OpenAI/DeepSeek/Qwen), responsive dark UI. Used ui-ux-pro-max skill for design guidance. |
+| 2026-04-25 | Drafted Phase 2 cognitive architecture (`docs/agent-cognitive-architecture.md`) — Goal Stack, layered memory, reflection loop, working-set assembly, three cognitive modes, three trigger modes, three collaboration tiers. |
+| 2026-04-25 | Created multi-agent collaboration bus (`AGENT-COLLAB.md`) — protocol for @Architect (Claude) ↔ @Copilot (GitHub Copilot) async handoff with strict message schema, single-threaded ticket flow, and append-only conversation log. |
+| 2026-04-26 | Phase 2 起步(重建):built `goals/` and `reflections/` skeletons (README + _template); created `goals/G-001.md` (Phase 2 MVP goal); dispatched T-001 (Goal Stack CLI + goal-driven dispatcher branch) to @Copilot via `AGENT-COLLAB.md` §7. Implementation work delegated; @Architect role is now spec + review only. Lesson: a previous attempt was lost when local changes were overwritten by a remote pull — D-005 added to `AGENT-COLLAB.md` mandating commit-then-push immediately. |
