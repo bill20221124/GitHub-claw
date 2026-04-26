@@ -22,6 +22,7 @@ script. The dispatcher posts the response as an issue/PR comment.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import pathlib
@@ -175,11 +176,86 @@ def _stub_response(reason: str, prompt: str) -> str:
     )
 
 
-def main() -> int:
-    skill_id = os.environ.get("SKILL", "").strip()
-    args = os.environ.get("ARGS", "").strip()
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments (argparse mode).
+
+    argparse values take precedence over env vars when both are present.
+    """
+    parser = argparse.ArgumentParser(
+        prog="run_skill.py",
+        description="Invoke the LLM for the current skill and write the response to .agent-run/output.md.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--skill",
+        default=None,
+        help="Skill ID to run (e.g. summarize). Falls back to SKILL env var.",
+    )
+    parser.add_argument(
+        "--reflect",
+        action="store_true",
+        default=False,
+        help="After skill run, create a reflection skeleton via append_reflection.py. "
+             "Also activated by REFLECT=1 env var.",
+    )
+    parser.add_argument(
+        "--ticket",
+        default=None,
+        help="Ticket ID to pass to append_reflection.py (e.g. T-002). Falls back to TICKET env var.",
+    )
+    parser.add_argument(
+        "--goal",
+        default=None,
+        help="Goal ID to pass to append_reflection.py (e.g. G-001). Falls back to GOAL env var.",
+    )
+    return parser.parse_args(argv)
+
+
+def _resolve_config(cli: argparse.Namespace) -> tuple[str, str, bool, str | None, str | None]:
+    """Merge CLI args with env vars; argparse values win when set.
+
+    Returns (skill_id, args_str, reflect, ticket, goal).
+    """
+    skill_id = cli.skill or os.environ.get("SKILL", "").strip()
+
+    args_str = os.environ.get("ARGS", "").strip()
+
+    reflect_env = os.environ.get("REFLECT", "").strip().lower() in ("1", "true")
+    reflect = cli.reflect or reflect_env
+
+    ticket = cli.ticket or os.environ.get("TICKET", "").strip() or None
+    goal = cli.goal or os.environ.get("GOAL", "").strip() or None
+
+    return skill_id, args_str, reflect, ticket, goal
+
+
+def _trigger_reflect(skill_id: str, ticket: str | None, goal: str | None) -> None:
+    """Call append_reflection.py to create a reflection skeleton."""
+    script = pathlib.Path(__file__).parent / "append_reflection.py"
+    cmd = [sys.executable, str(script)]
+    if ticket:
+        cmd += ["--ticket", ticket]
+    if goal:
+        cmd += ["--goal", goal]
+    if skill_id:
+        cmd += ["--skill", skill_id]
+    try:
+        result = subprocess.run(cmd, check=False)
+        if result.returncode != 0:
+            print(
+                f"WARNING: append_reflection.py exited {result.returncode}",
+                file=sys.stderr,
+            )
+    except OSError as exc:
+        print(f"WARNING: could not invoke append_reflection.py: {exc}", file=sys.stderr)
+
+
+def main(argv: list[str] | None = None) -> int:
+    cli = _parse_args(argv)
+    skill_id, args, reflect, ticket, goal = _resolve_config(cli)
+
     if not skill_id:
-        print("SKILL env var is required", file=sys.stderr)
+        print("SKILL env var (or --skill) is required", file=sys.stderr)
         return 2
 
     skill_path = SKILLS / skill_id / "skill.md"
@@ -204,6 +280,8 @@ def main() -> int:
             f"See policies/prompt-safety.md.\n",
             encoding="utf-8",
         )
+        if reflect:
+            _trigger_reflect(skill_id, ticket, goal)
         return 0
 
     prompt = wrapper.format(
@@ -218,6 +296,10 @@ def main() -> int:
     response = call_anthropic(prompt) if tier == "complex" else call_github_models(prompt)
 
     OUTPUT.write_text(response.rstrip() + "\n", encoding="utf-8")
+
+    if reflect:
+        _trigger_reflect(skill_id, ticket, goal)
+
     return 0
 
 
