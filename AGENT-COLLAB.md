@@ -147,10 +147,13 @@ Acceptance Criteria:
         * 四个 body 问题段保留为空白占位符(不填答案,答案由人 / @Copilot 手写)
         * 幂等:若该 ticket 对应的 R-NNN 已存在,exit(0) 并打印 warning,不覆盖
         * 支持 `--help`
-- [ ] 修改 `scripts/run_skill.py`,新增 `--reflect` 可选 flag:
-        python scripts/run_skill.py <skill-id> [--reflect] [--ticket T-NNN] [--goal G-NNN]
-        * 无 `--reflect` 时行为与现在 **完全一致**(向后兼容,不破坏任何现有调用)
-        * 有 `--reflect` 时:skill 跑完后调用 append_reflection.py,传入 skill-id / ticket / goal
+- [ ] 修改 `scripts/run_skill.py`,新增 reflect 支持(双模式,见 §8 2026-04-26T08:15Z INSTRUCTION):
+        # argparse(人工/测试)
+        python scripts/run_skill.py --skill <id> [--reflect] [--ticket T-NNN] [--goal G-NNN]
+        # env var(GitHub Actions,向后兼容)
+        SKILL=<id> [REFLECT=1] [TICKET=T-NNN] [GOAL=G-NNN] python scripts/run_skill.py
+        * 无 reflect 信号时行为与现在 **完全一致**
+        * 有 reflect 时:skill 跑完后调用 append_reflection.py,传入 skill-id / ticket / goal
 - [ ] 新增 `scripts/test_append_reflection.py`,python -m unittest 可跑:
         至少覆盖:文件创建 / 编号自增 / 幂等(已存在时不覆盖) / run_skill --reflect 触发 三条路径
         总测试数 ≥ 10
@@ -201,6 +204,34 @@ Linked PR / Issue: <@Copilot 在 REPORT 时填>
 
 > 协作过程的全部消息按时间倒序追加在这里。
 > **不要修改/删除已有消息**,要纠错请发 `CORRECTION` 引用原消息时间戳。
+
+### [2026-04-26T08:15Z] @Architect → @Copilot · INSTRUCTION
+**Ref:** T-002
+**Topic:** run_skill.py 接口更正 — 用 env var + argparse 双模式,不要纯 CLI flag
+**Body:**
+读完 `scripts/run_skill.py` 发现:现在的调用方式是 `SKILL=id python run_skill.py`(env var),
+不是 `python run_skill.py <id>`。SPEC 中写的 `--reflect --ticket --goal` 纯 CLI flag 与现有接口冲突。
+
+更正为**双模式**:argparse 优先,env var 作 fallback:
+```
+# 新调用(argparse,人工/测试用)
+python scripts/run_skill.py --skill summarize --reflect --ticket T-002 --goal G-001
+
+# 旧调用(env var,GitHub Actions 用)— 完全不变
+SKILL=summarize python scripts/run_skill.py
+
+# 带 reflect 的 Actions 调用(env var 形式)
+SKILL=summarize REFLECT=1 TICKET=T-002 GOAL=G-001 python scripts/run_skill.py
+```
+规则:
+- `argparse` 参数存在时优先;不存在则从 env var 读(`SKILL`/`REFLECT`/`TICKET`/`GOAL`)。
+- `REFLECT` env var 接受 `1` / `true`(大小写不敏感)。
+- 无 `--reflect` / `REFLECT` 时行为与现在**完全一致**。
+
+§7 T-002 Acceptance Criteria 第 2 条同步更正为此接口。
+**Next action by:** @Copilot
+
+---
 
 ### [2026-04-26T08:00Z] @Architect → @Copilot · SPEC
 **Ref:** T-002
