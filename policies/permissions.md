@@ -7,6 +7,7 @@
 | validate-skills.yml   | read     | none   | none          | none   | none     | static check |
 | jekyll-gh-pages.yml   | read     | none   | none          | none   | write*   | * only for Pages deploy |
 | static.yml            | read     | none   | none          | none   | write*   | * only for Pages deploy |
+| goal-driven.yml       | read     | write  | none          | none   | none     | daily reminder; read goals, comment on linked issues only |
 
 ## External Domain Allowlist
 
