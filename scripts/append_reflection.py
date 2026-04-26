@@ -164,11 +164,9 @@ def create_reflection(
     """
     template_path = reflections_dir / TEMPLATE_FILENAME
     if not template_path.is_file():
-        print(
-            f"ERROR: template not found at {template_path}",
-            file=sys.stderr,
+        raise FileNotFoundError(
+            f"template not found at {template_path}"
         )
-        sys.exit(1)
 
     template_text = template_path.read_text(encoding="utf-8")
 
@@ -253,15 +251,19 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 0
 
-    out_path = create_reflection(
-        reflections_dir=reflections_dir,
-        ticket=args.ticket,
-        goal=args.goal,
-        skill=args.skill,
-        outcome=OUTCOME_MAP[args.outcome],
-        duration_minutes=args.duration_minutes,
-        author=args.author,
-    )
+    try:
+        out_path = create_reflection(
+            reflections_dir=reflections_dir,
+            ticket=args.ticket,
+            goal=args.goal,
+            skill=args.skill,
+            outcome=OUTCOME_MAP[args.outcome],
+            duration_minutes=args.duration_minutes,
+            author=args.author,
+        )
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
     print(f"Created {out_path}")
     return 0
 

@@ -240,7 +240,12 @@ def _trigger_reflect(skill_id: str, ticket: str | None, goal: str | None) -> Non
     if skill_id:
         cmd += ["--skill", skill_id]
     try:
-        subprocess.run(cmd, check=False)
+        result = subprocess.run(cmd, check=False)
+        if result.returncode != 0:
+            print(
+                f"WARNING: append_reflection.py exited {result.returncode}",
+                file=sys.stderr,
+            )
     except OSError as exc:
         print(f"WARNING: could not invoke append_reflection.py: {exc}", file=sys.stderr)
 
