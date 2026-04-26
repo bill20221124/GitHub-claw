@@ -53,6 +53,7 @@ This table defines which files are linked. Whenever you change a file in the **C
 | `goals/G-NNN.md`(实例,新增/状态切换) | `AGENT-COLLAB.md` §6 Decisions Log(若架构级)· 关联 ticket 的 `Last advanced` |
 | `reflections/README.md` 或 `reflections/_template.md`(schema 变更) | `scripts/append_reflection.py`(待 T-002 实现)· `MEMORY.md` Standing Context |
 | `reflections/R-NNN.md` 标 `→ memory-write candidate` | `MEMORY.md`(经 `/memory-write` skill 候选 PR) |
+| `AGENT-COLLAB.md` §12 (Project Roadmap) | `docs/agent-cognitive-architecture.md` Phase definitions · `MEMORY.md` Standing Context |
 
 ---
 
