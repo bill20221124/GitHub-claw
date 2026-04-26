@@ -35,6 +35,7 @@ It stores role definitions, memories, and working artifacts so that context surv
 - Goal Stack lives in `goals/G-NNN.md`; schema in `goals/README.md`; first concrete goal is `goals/G-001.md` (implement Phase 2 minimum viable set).
 - Reflection log lives in `reflections/R-NNN.md`; schema in `reflections/README.md`; written after every skill run (post T-002).
 - Inter-agent collaboration protocol: `AGENT-COLLAB.md`. @Architect (Claude) 负责规格 / 决策 / 审查;@Copilot (GitHub Copilot) 负责按规格实施。Ticket / Decision / Question 三类信息严格分区。
+- Project roadmap & North Star: `AGENT-COLLAB.md` §12. 任何 ticket / decision / message 与 §12 冲突时,以 §12 为准。
 
 ---
 
@@ -62,6 +63,7 @@ The following files are linked — changing one requires checking the others:
 | `goals/G-NNN.md` (实例) | `AGENT-COLLAB.md` §6 (若架构级决策) · 关联 ticket |
 | `reflections/README.md` 或 `_template.md` (schema) | `scripts/append_reflection.py` · `MEMORY.md` Standing Context |
 | `reflections/R-NNN.md` 标 `memory-write candidate` | `MEMORY.md` (经 `/memory-write` 候选 PR) |
+| `AGENT-COLLAB.md` §12 (Roadmap) | `docs/agent-cognitive-architecture.md` (Phase 定义需对齐) · `MEMORY.md` Standing Context |
 
 ---
 
