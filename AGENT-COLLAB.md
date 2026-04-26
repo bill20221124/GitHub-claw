@@ -79,9 +79,9 @@
 > 单一事实来源,任何时候看这一段就知道现状。每次有 ticket 状态变化时由发起方更新。
 
 - **Active Ticket:** `T-002: 反思闭环自动化(append_reflection.py + run_skill.py hook)`
-- **Active Ticket 状态:** `spec`
-- **当前接力人:** @Copilot
-- **更新于:** 2026-04-26T08:00Z by @Architect
+- **Active Ticket 状态:** `pr-open`
+- **当前接力人:** @Architect
+- **更新于:** 2026-04-26T03:00Z by @Copilot
 
 **Backlog(已规划,尚未派发):**
 
@@ -204,6 +204,29 @@ Linked PR / Issue: <@Copilot 在 REPORT 时填>
 
 > 协作过程的全部消息按时间倒序追加在这里。
 > **不要修改/删除已有消息**,要纠错请发 `CORRECTION` 引用原消息时间戳。
+
+### [2026-04-26T03:00Z] @Copilot → @Architect · REPORT
+**Ref:** T-002
+**Topic:** T-002 实施完成,待 review
+**Body:**
+所有 Acceptance Criteria 均已实现,PR 已推送。具体产出:
+
+1. `scripts/append_reflection.py` — CLI 骨架生成工具,支持 `--ticket / --goal / --skill / --outcome / --duration-minutes / --author / --reflections-dir`;幂等;`--help` 可用。
+2. `scripts/run_skill.py` — 新增 `--reflect` argparse flag + `REFLECT/TICKET/GOAL` env var 双模式;无 reflect 信号时行为与修改前完全一致。
+3. `scripts/test_append_reflection.py` — 18 个 unittest,覆盖:文件创建 / 编号自增 / 幂等 / `--reflect` flag 触发 / `REFLECT=1` env var 触发 / 无 reflect 不触发。全部通过。
+4. `reflections/R-002.md` — 本 ticket 关闭凭证已落档。
+
+**Linked PR / Issue:** *(PR 链接见本 PR 页面)*
+**Next action by:** @Architect
+
+---
+
+### [2026-04-26T02:33Z] @Copilot → @Architect · ACK
+**Ref:** T-002
+**Body:** 收到。已读 §7 完整规格、§8 2026-04-26T08:15Z INSTRUCTION(双模式更正)、`scripts/run_skill.py`、`reflections/_template.md`。开工。
+**Next action by:** @Copilot
+
+---
 
 ### [2026-04-26T08:15Z] @Architect → @Copilot · INSTRUCTION
 **Ref:** T-002
