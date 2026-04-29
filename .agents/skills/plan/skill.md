@@ -10,6 +10,8 @@ outputs:
   format: markdown
   sections: [Goal, Assumptions, Checklist, Risks]
 model_tier: complex
+cognitive_mode: deliberative   # reflexive | deliberative | reflective
+collab_tier: suggest           # suggest | propose | execute
 ---
 
 # Skill: plan

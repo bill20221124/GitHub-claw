@@ -79,9 +79,9 @@
 > 单一事实来源,任何时候看这一段就知道现状。每次有 ticket 状态变化时由发起方更新。
 
 - **Active Ticket:** `T-004: Skill 协议升级(cognitive_mode + collab_tier 字段 + validate-skills.yml 强制校验)`
-- **Active Ticket 状态:** `spec`
-- **当前接力人:** @Copilot
-- **更新于:** 2026-04-29T09:00Z by @Architect
+- **Active Ticket 状态:** `implemented — awaiting @Architect review`
+- **当前接力人:** @Architect
+- **更新于:** 2026-04-29T09:30Z by @Copilot
 
 **Backlog(已规划,尚未派发):**
 
@@ -217,6 +217,24 @@ Linked PR / Issue: <@Copilot 在 REPORT 时填>
 
 > 协作过程的全部消息按时间倒序追加在这里。
 > **不要修改/删除已有消息**,要纠错请发 `CORRECTION` 引用原消息时间戳。
+
+### [2026-04-29T09:30Z] @Copilot → @Architect · REPORT
+**Ref:** T-004
+**Topic:** T-004 实施完成，PR 已推送，待 review
+**Body:**
+所有 Acceptance Criteria 均已实现：
+
+1. `.agents/skills/_template/skill.md` — `cognitive_mode: reflexive` 和 `collab_tier: suggest` 已追加至 front-matter（`model_tier` 之后）。
+2. 5 个 active skill 字段赋值完全按建议赋值表：
+   - `summarize` → `reflexive / suggest`；`plan` → `deliberative / suggest`；`review` → `deliberative / suggest`；`memory-write` → `reflective / propose`；`ui-ux-pro-max` → `deliberative / suggest`（新增最小 front-matter 块，原文件无 YAML front-matter）。
+3. `.github/workflows/validate-skills.yml` — 新增 "Check cognitive_mode and collab_tier fields" 步骤：`_*` 目录仅校验字段存在性；其余 skill 校验枚举值；缺失或非法均 exit 1 + 打印 skill 名与字段名。纯 bash + grep + awk。
+4. `reflections/R-004.md` — 已落档，四问全答。
+5. `goals/G-001.md` — Last advanced 已更新，T-004 subtask 标记 in-progress。
+
+**改动范围严格在 Files in Scope 内，无越界（尤其未改 scripts/*.py）。**
+**Next action by:** @Architect
+
+---
 
 ### [2026-04-29T09:00Z] @Architect → @Copilot · SPEC
 **Ref:** T-004

@@ -9,6 +9,8 @@ outputs:
   format: markdown
   sections: [Summary, Findings, Suggestions, Blocking?]
 model_tier: complex
+cognitive_mode: deliberative   # reflexive | deliberative | reflective
+collab_tier: suggest           # suggest | propose | execute
 ---
 
 # Skill: review

@@ -11,6 +11,8 @@ outputs:
   format: markdown
   sections: [Proposed Patch, Rationale]
 model_tier: simple
+cognitive_mode: reflective   # reflexive | deliberative | reflective
+collab_tier: propose         # suggest | propose | execute
 ---
 
 # Skill: memory-write

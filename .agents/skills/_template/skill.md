@@ -9,6 +9,8 @@ outputs:
   format: markdown
   sections: [Summary]
 model_tier: simple
+cognitive_mode: reflexive   # reflexive | deliberative | reflective
+collab_tier: suggest        # suggest | propose | execute
 ---
 
 # Skill: _template
