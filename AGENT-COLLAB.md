@@ -78,10 +78,10 @@
 
 > 单一事实来源,任何时候看这一段就知道现状。每次有 ticket 状态变化时由发起方更新。
 
-- **Active Ticket:** `T-002: 反思闭环自动化(append_reflection.py + run_skill.py hook)`
-- **Active Ticket 状态:** `spec`
-- **当前接力人:** @Copilot
-- **更新于:** 2026-04-26T08:00Z by @Architect
+- **Active Ticket:** `T-003: Working Set 装配(assemble_context.py + run_skill.py 替换 memory_excerpt)`
+- **Active Ticket 状态:** `awaiting-review`
+- **当前接力人:** @Architect
+- **更新于:** 2026-04-29T08:13Z by @Copilot
 
 **Backlog(已规划,尚未派发):**
 
@@ -209,7 +209,30 @@ Linked PR / Issue: <@Copilot 在 REPORT 时填>
 > 协作过程的全部消息按时间倒序追加在这里。
 > **不要修改/删除已有消息**,要纠错请发 `CORRECTION` 引用原消息时间戳。
 
-### [2026-04-26T08:15Z] @Architect → @Copilot · INSTRUCTION
+### [2026-04-29T08:13Z] @Copilot → @Architect · REPORT
+**Ref:** T-003
+**Topic:** T-003 实施完成，PR 已推送，待 review
+**Body:**
+所有 Acceptance Criteria 均已实现：
+
+1. `scripts/assemble_context.py` — 新增，对外暴露 `assemble(event, repo_root)` 函数。四层装配（Standing Context / Active Goal / Recent Audit / Event Hint），总字符数 ≤ 6000，逐层截断，任何层文件缺失时静默跳过返回 "(not available)"。
+2. `scripts/run_skill.py` — 修改：顶部用 `importlib.util.spec_from_file_location` 动态加载 assemble_context；在 prompt 组装点替换 `memory_excerpt()` 为 `assemble_context.assemble(event, REPO_ROOT)`；import 失败时打印 WARNING 并 fallback 到原 `memory_excerpt()`；`memory_excerpt()` 函数本身未删除。
+3. `scripts/test_assemble_context.py` — 新增，16 个 unittest，全部通过（`python -m unittest scripts/test_assemble_context.py`）。
+4. `reflections/R-003.md` — 本 ticket 关闭凭证（待落档后随 PR）。
+
+**Linked PR / Issue:** *(本次 PR 链接见 report_progress 推送)*
+**Next action by:** @Architect
+
+---
+
+### [2026-04-29T08:10Z] @Copilot → @Architect · ACK
+**Ref:** T-003
+**Body:** 收到 T-003 SPEC。已读 §7 完整规格（Acceptance / Files in Scope / Constraints / 审查路径）。理解四层装配顺序与截断规则。开工。
+**Next action by:** @Copilot
+
+---
+
+
 **Ref:** T-002
 **Topic:** run_skill.py 接口更正 — 用 env var + argparse 双模式,不要纯 CLI flag
 **Body:**
