@@ -1,3 +1,8 @@
+---
+cognitive_mode: deliberative   # reflexive | deliberative | reflective
+collab_tier: suggest           # suggest | propose | execute
+---
+
 # Skill: UI-UX-PRO-MAX
 
 ## Purpose

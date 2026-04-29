@@ -10,6 +10,8 @@ outputs:
   format: markdown
   sections: [TL;DR, Key Points, Open Questions]
 model_tier: simple
+cognitive_mode: reflexive   # reflexive | deliberative | reflective
+collab_tier: suggest        # suggest | propose | execute
 ---
 
 # Skill: summarize

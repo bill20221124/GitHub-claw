@@ -69,3 +69,46 @@ jobs:
             done
           done
           exit $fail
+
+      - name: Check cognitive_mode and collab_tier fields
+        shell: bash
+        run: |
+          fail=0
+          shopt -s nullglob
+          VALID_MODES="reflexive deliberative reflective"
+          VALID_TIERS="suggest propose execute"
+
+          for f in .agents/skills/*/skill.md; do
+            dir_name="$(basename "$(dirname "$f")")"
+            is_template=false
+            case "$dir_name" in
+              _*) is_template=true ;;
+            esac
+
+            for field in cognitive_mode collab_tier; do
+              if ! grep -Eq "^${field}:" "$f"; then
+                echo "MISSING field '${field}' in skill '${dir_name}' ($f)"
+                fail=1
+                continue
+              fi
+
+              if [ "$is_template" = "false" ]; then
+                value=$(grep -E "^${field}:" "$f" | head -1 | awk -F: '{print $2}' | awk '{print $1}')
+                case "$field" in
+                  cognitive_mode)
+                    case "$value" in
+                      reflexive|deliberative|reflective) ;;
+                      *) echo "INVALID cognitive_mode '${value}' in skill '${dir_name}' ($f)"; fail=1 ;;
+                    esac
+                    ;;
+                  collab_tier)
+                    case "$value" in
+                      suggest|propose|execute) ;;
+                      *) echo "INVALID collab_tier '${value}' in skill '${dir_name}' ($f)"; fail=1 ;;
+                    esac
+                    ;;
+                esac
+              fi
+            done
+          done
+          exit $fail
