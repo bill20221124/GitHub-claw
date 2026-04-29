@@ -63,6 +63,8 @@ The following files are linked — changing one requires checking the others:
 | `goals/G-NNN.md` (实例) | `AGENT-COLLAB.md` §6 (若架构级决策) · 关联 ticket |
 | `reflections/README.md` 或 `_template.md` (schema) | `scripts/append_reflection.py` · `MEMORY.md` Standing Context |
 | `reflections/R-NNN.md` 标 `memory-write candidate` | `MEMORY.md` (经 `/memory-write` 候选 PR) |
+| `scripts/assemble_context.py` | `scripts/run_skill.py`(调用点) · `prompts/skill-wrapper.md`(memory_excerpt 占位符) · `MEMORY.md` Standing Context |
+| `.agents/skills/<id>/skill.md` (cognitive_mode/collab_tier) | `.github/workflows/validate-skills.yml` 枚举校验 · `MEMORY.md` Standing Context |
 | `AGENT-COLLAB.md` §12 (Roadmap) | `docs/agent-cognitive-architecture.md` (Phase 定义需对齐) · `MEMORY.md` Standing Context |
 
 ---
@@ -79,6 +81,9 @@ The following files are linked — changing one requires checking the others:
 | 2026-04-25 | Transformed `index.html` from static "AI Guide" knowledge base to a fully functional AI interactive chat website. Features: OpenAI-compatible streaming chat, localStorage API Key/BaseURL/model/system-prompt config, Markdown+code-highlight rendering, settings panel, multi-model support (OpenAI/DeepSeek/Qwen), responsive dark UI. Used ui-ux-pro-max skill for design guidance. |
 | 2026-04-25 | Drafted Phase 2 cognitive architecture (`docs/agent-cognitive-architecture.md`) — Goal Stack, layered memory, reflection loop, working-set assembly, three cognitive modes, three trigger modes, three collaboration tiers. |
 | 2026-04-25 | Created multi-agent collaboration bus (`AGENT-COLLAB.md`) — protocol for @Architect (Claude) ↔ @Copilot (GitHub Copilot) async handoff with strict message schema, single-threaded ticket flow, and append-only conversation log. |
-| 2026-04-29 | T-004 实施：为 5 个 active skill + _template 新增 cognitive_mode/collab_tier 字段；validate-skills.yml 新增枚举校验步骤；reflections/R-004.md 落档。Phase 2 最后一个 ticket 实施完成，待 @Architect review。 |
+| 2026-04-29 | **Phase 2 完成**：G-001 关闭(status→done)。T-001–T-004 全部 REVIEW 通过，出口门禁达成。R-001–R-005 落档，R-PHASE-2.md 落档。 |
+| 2026-04-29 | T-004 REVIEW 通过：5 个 skill.md + _template 新增 cognitive_mode/collab_tier 字段，validate-skills.yml 枚举校验，R-004.md 落档。Phase 2 出口门禁全部达成。 |
+| 2026-04-29 | T-003 REVIEW 通过：scripts/assemble_context.py 四层 ContextPack(Standing Context/Active Goal/Recent Audit/Event Hint)；run_skill.py 替换 memory_excerpt()，fallback 保留；16 unittest 全通过；R-003.md 落档。 |
+| 2026-04-26 | T-001 REVIEW 通过：scripts/goal_stack.py(list/show/advance/set-status)、goal-driven.yml(schedule 09:15 UTC)、20 unittest 全通过、R-001.md 落档。 |
 | 2026-04-26 | T-002 实施:创建 scripts/append_reflection.py(幂等反思骨架 CLI)、修改 scripts/run_skill.py 加 --reflect 双模式 hook、18 个 unittest 全通过,reflections/R-002.md 落档。 |
 | 2026-04-26 | Phase 2 起步(重建):built `goals/` and `reflections/` skeletons (README + _template); created `goals/G-001.md` (Phase 2 MVP goal); dispatched T-001 (Goal Stack CLI + goal-driven dispatcher branch) to @Copilot via `AGENT-COLLAB.md` §7. Implementation work delegated; @Architect role is now spec + review only. Lesson: a previous attempt was lost when local changes were overwritten by a remote pull — D-005 added to `AGENT-COLLAB.md` mandating commit-then-push immediately. |
