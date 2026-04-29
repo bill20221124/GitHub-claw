@@ -41,6 +41,24 @@ PROMPTS = REPO_ROOT / "prompts"
 SKILLS = REPO_ROOT / ".agents/skills"
 POLICY_SAFETY = REPO_ROOT / "policies/prompt-safety.md"
 
+# ---------------------------------------------------------------------------
+# Working Set assembler (Phase 2 — T-003)
+# ---------------------------------------------------------------------------
+# Try to import assemble_context; fall back to memory_excerpt() if unavailable.
+try:
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location(
+        "assemble_context",
+        pathlib.Path(__file__).parent / "assemble_context.py",
+    )
+    _mod = _ilu.module_from_spec(_spec)  # type: ignore[arg-type]
+    _spec.loader.exec_module(_mod)  # type: ignore[union-attr]
+    _assemble_context = _mod.assemble
+    del _ilu, _spec, _mod
+except Exception:  # noqa: BLE001
+    _assemble_context = None
+    print("WARNING: assemble_context.py not available; falling back to memory_excerpt()", file=sys.stderr)
+
 # Red-flag phrases. Mirrored from policies/prompt-safety.md — keep in sync.
 RED_FLAGS = (
     "ignore previous instructions",
@@ -288,7 +306,11 @@ def main(argv: list[str] | None = None) -> int:
         system=system,
         safety=safety,
         skill=skill_text,
-        memory_excerpt=memory_excerpt(),
+        memory_excerpt=(
+            _assemble_context(event, REPO_ROOT)
+            if _assemble_context is not None
+            else memory_excerpt()
+        ),
         untrusted=untrusted,
     )
 
