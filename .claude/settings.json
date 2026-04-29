@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/chotakuko/GitHub-claw && git pull --rebase --autostash --quiet 2>/dev/null; exit 0",
+            "statusMessage": "Syncing from remote..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/chotakuko/GitHub-claw && commits=$(git rev-list --count @{u}..HEAD 2>/dev/null); [ \"$commits\" -gt 0 ] && git push --quiet 2>/dev/null; exit 0",
+            "statusMessage": "Pushing commits to remote..."
+          }
+        ]
+      }
+    ]
+  }
+}
