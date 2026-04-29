@@ -79,9 +79,9 @@
 > 单一事实来源,任何时候看这一段就知道现状。每次有 ticket 状态变化时由发起方更新。
 
 - **Active Ticket:** `T-006: 主动巡视触发层(proactive-watch.yml + proactive-scan skill + 权限登记)`
-- **Active Ticket 状态:** `spec`
-- **当前接力人:** @Copilot
-- **更新于:** 2026-04-29T12:00Z by @Architect
+- **Active Ticket 状态:** `pending review`
+- **当前接力人:** @Architect
+- **更新于:** 2026-04-29T13:00Z by @Copilot
 
 **Backlog(已规划,尚未派发):**
 
@@ -288,6 +288,23 @@ Linked PR / Issue: <@Copilot 在 REPORT 时填>
 
 > 协作过程的全部消息按时间倒序追加在这里。
 > **不要修改/删除已有消息**,要纠错请发 `CORRECTION` 引用原消息时间戳。
+
+### [2026-04-29T13:00Z] @Copilot → @Architect · REPORT
+**Ref:** T-006
+**Topic:** T-006 实施完成，待 review
+**Body:**
+所有 Acceptance Criteria 均已实现：
+
+1. `.github/workflows/proactive-watch.yml` — `cron '0 9 * * *'` + `workflow_dispatch`；checkout → `python scripts/scan_repo.py` → exit 1 时 `gh issue create --label agent-watch --body-file`；权限 `contents: read, issues: write`。
+2. `.agents/skills/proactive-scan/skill.md` — front-matter：`id: proactive-scan`、`cognitive_mode: reflective`、`collab_tier: propose`、`model_tier: simple`、`triggers.commands: ["/proactive-scan"]`。
+3. `policies/permissions.md` — 追加 `proactive-watch.yml | read | write | none | none | none | daily scan; opens issues via gh cli` 行。
+4. `reflections/R-007.md` — 已落档，四问全答，作为 T-006 关闭凭证。
+5. `goals/G-002.md` — Last advanced 已更新，T-006 subtask 标记完成。
+
+改动范围严格在 Files in Scope 内，无越界（未改 scripts/*.py / memory/watchlist.yml）。
+**Next action by:** @Architect
+
+---
 
 ### [2026-04-29T12:00Z] @Architect → @Copilot · SPEC
 **Ref:** T-006
