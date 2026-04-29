@@ -1,0 +1,31 @@
+# memory/watchlist.yml — Proactive Watch Checklist
+# Each entry defines one health check run by scripts/scan_repo.py.
+# Fields:
+#   id          : unique identifier (matches check key)
+#   enabled     : bool — set false to disable without deleting
+#   description : human-readable description
+#   threshold_*  : type-specific threshold values
+
+checks:
+  stale-goals:
+    id: stale-goals
+    enabled: true
+    threshold_days: 7
+    description: "goals/G-NNN.md status=in-progress 且 last_advanced 超过 threshold_days 天"
+
+  missing-reflections:
+    id: missing-reflections
+    enabled: true
+    description: "§9 已归档 ticket 数 > reflections/R-NNN.md 数量"
+
+  open-questions:
+    id: open-questions
+    enabled: true
+    threshold_days: 7
+    description: "AGENT-COLLAB.md §5 中 status=open 且存在超过 threshold_days 天的 Q-NNN"
+
+  audit-overrun:
+    id: audit-overrun
+    enabled: true
+    threshold_pct: 80
+    description: "今日 audit 文件中 token 用量超过 policies/budget.md daily_tokens 的 threshold_pct%"
