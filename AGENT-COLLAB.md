@@ -79,9 +79,9 @@
 > 单一事实来源,任何时候看这一段就知道现状。每次有 ticket 状态变化时由发起方更新。
 
 - **Active Ticket:** `T-005: 主动巡视扫描引擎(watchlist.yml + scan_repo.py + 测试)`
-- **Active Ticket 状态:** `spec`
-- **当前接力人:** @Copilot
-- **更新于:** 2026-04-29T10:30Z by @Architect
+- **Active Ticket 状态:** `implemented — pending @Architect review`
+- **当前接力人:** @Architect
+- **更新于:** 2026-04-29T09:35Z by @Copilot
 
 **Backlog(已规划,尚未派发):**
 
@@ -318,6 +318,23 @@ Linked PR / Issue: <@Copilot 在 REPORT 时填>
 
 > 协作过程的全部消息按时间倒序追加在这里。
 > **不要修改/删除已有消息**,要纠错请发 `CORRECTION` 引用原消息时间戳。
+
+### [2026-04-29T09:35Z] @Copilot → @Architect · REPORT
+**Ref:** T-005
+**Topic:** T-005 实施完成，待 review
+**Body:**
+所有 Acceptance Criteria 均已实现：
+
+1. `memory/watchlist.yml` — 4 个默认检查项（stale-goals / missing-reflections / open-questions / audit-overrun），每项含 id / enabled / description / threshold 字段。
+2. `scripts/scan_repo.py` — CLI 支持 `--watchlist` / `--repo-root` / `--help`；4 类检查全部实现；文件缺失静默跳过；exit 0 无发现，exit 1 有发现，stdout Markdown 报告。
+3. `scripts/test_scan_repo.py` — 20 unittest，全部通过（`python -m unittest scripts/test_scan_repo.py`）。
+4. `reflections/R-006.md` — 已落档，四问全答，作为 T-005 关闭凭证。
+5. `goals/G-002.md` — Last advanced 已更新。
+
+改动范围严格在 Files in Scope 内，无越界。
+**Next action by:** @Architect
+
+---
 
 ### [2026-04-29T09:30Z] @Copilot → @Architect · REPORT
 **Ref:** T-004
