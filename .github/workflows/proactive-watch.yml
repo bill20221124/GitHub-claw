@@ -1,0 +1,43 @@
+# Proactive Watch — daily repository health scan.
+# Runs scan_repo.py every day at 09:00 UTC; opens a GitHub issue if findings exist.
+# See AGENT-COLLAB.md §7 (T-006) for full specification.
+name: Proactive Watch
+
+on:
+  schedule:
+    - cron: '0 9 * * *'   # 09:00 UTC daily
+  workflow_dispatch:        # allow manual trigger
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run proactive scan
+        id: scan
+        run: |
+          set +e
+          python scripts/scan_repo.py > /tmp/scan_report.md 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          cat /tmp/scan_report.md
+
+      - name: Open issue if findings detected
+        if: steps.scan.outputs.exit_code == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="[Agent Watch] $(date -u +%Y-%m-%d) 巡视报告"
+          gh issue create \
+            --title "$TITLE" \
+            --label "agent-watch" \
+            --body-file /tmp/scan_report.md

@@ -8,6 +8,7 @@
 | jekyll-gh-pages.yml   | read     | none   | none          | none   | write*   | * only for Pages deploy |
 | static.yml            | read     | none   | none          | none   | write*   | * only for Pages deploy |
 | goal-driven.yml       | read     | write  | none          | none   | none     | daily reminder; read goals, comment on linked issues only |
+| proactive-watch.yml   | read     | write  | none          | none   | none     | daily scan; opens issues via gh cli |
 
 ## External Domain Allowlist
 
