@@ -25,6 +25,7 @@ Constraints (T-003 / T-007):
 
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import re
@@ -68,7 +69,7 @@ def _try_import_embed_index():
         spec.loader.exec_module(mod)  # type: ignore[union-attr]
         _embed_index = mod
         return mod
-    except Exception:  # noqa: BLE001
+    except (ImportError, AttributeError, OSError, SyntaxError):
         return None
 
 GOAL_FILE_PATTERN = re.compile(r"^G-\d+\.md$")
@@ -271,7 +272,7 @@ def _extract_relevant_reflections(event: dict, repo_root: pathlib.Path) -> str:
             fpath = reflections_dir / filename
             try:
                 text = fpath.read_text(encoding="utf-8")
-            except OSError:
+            except (OSError, UnicodeDecodeError):
                 continue
             # Include the first 400 chars of the reflection body (skip front-matter)
             body_start = text.find("\n# ")
@@ -280,7 +281,7 @@ def _extract_relevant_reflections(event: dict, repo_root: pathlib.Path) -> str:
             parts.append(f"**{filename}** (score {score:.3f})\n{short}")
 
         return "\n\n".join(parts) if parts else "(not available)"
-    except Exception:  # noqa: BLE001
+    except (OSError, json.JSONDecodeError, AttributeError, TypeError, ValueError):
         return "(not available)"
 
 

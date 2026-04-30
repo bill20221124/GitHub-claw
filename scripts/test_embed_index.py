@@ -181,7 +181,6 @@ class TestQueryIndex(unittest.TestCase):
                              "Reflection automation: append_reflection.py created.")
             _make_reflection(root, "R-003.md",
                              "Working set assembly: assemble_context four layers.")
-            self._td_root = root  # keep reference alive is not needed since we return
             return ei.build_index(root)
 
     def test_empty_index_returns_empty_list(self):
