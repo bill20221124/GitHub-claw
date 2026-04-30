@@ -8,12 +8,14 @@ Public API:
     assemble(event: dict, repo_root: pathlib.Path | None = None) -> str
 
 Layer priority (total ≤ 6000 chars; truncated by layer when over budget):
-    1. Standing Context — MEMORY.md ## Standing Context section   (≤ 1500 chars)
-    2. Active Goal      — in-progress goals/G-NNN.md              (≤ 1500 chars)
-    3. Recent Audit     — memory/audit/ last 7 days, 20 lines max (≤ 1500 chars)
-    4. Event Hint       — file paths extracted from PR/issue event (≤  500 chars)
+    1. Standing Context    — MEMORY.md ## Standing Context section   (≤ 1500 chars)
+    2. Active Goal         — in-progress goals/G-NNN.md              (≤ 1500 chars)
+    3. Relevant Context    — top-3 reflections by TF-IDF (Phase 4+); (≤ 1500 chars)
+                             falls back to Recent Audit (last 7 days) when
+                             embed_index is not available.
+    4. Event Hint          — file paths extracted from PR/issue event (≤  500 chars)
 
-Constraints (T-003):
+Constraints (T-003 / T-007):
     - stdlib only (no new pip dependencies)
     - pure functional style, matches goal_stack.py / append_reflection.py convention
     - no LLM calls
@@ -40,9 +42,34 @@ TOTAL_CHAR_LIMIT = 6000
 LAYER_LIMITS = {
     "standing_context": 1500,
     "active_goal": 1500,
-    "recent_audit": 1500,
+    "relevant_context": 1500,  # reflections (Phase 4+) or recent audit (fallback)
     "event_hint": 500,
 }
+
+# ---------------------------------------------------------------------------
+# Lazy import of embed_index (Phase 4 — available only when the module exists)
+# ---------------------------------------------------------------------------
+
+_embed_index = None  # set to the module if importable
+
+
+def _try_import_embed_index():
+    """Return the embed_index module, or None if not available."""
+    global _embed_index  # noqa: PLW0603
+    if _embed_index is not None:
+        return _embed_index
+    import importlib.util as _ilu
+    _ei_path = _SCRIPT_DIR / "embed_index.py"
+    spec = _ilu.spec_from_file_location("embed_index", _ei_path)
+    if spec is None or spec.loader is None:
+        return None
+    try:
+        mod = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)  # type: ignore[union-attr]
+        _embed_index = mod
+        return mod
+    except Exception:  # noqa: BLE001
+        return None
 
 GOAL_FILE_PATTERN = re.compile(r"^G-\d+\.md$")
 
@@ -137,7 +164,7 @@ def _extract_section(text: str, heading: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Layer 3 — Recent Audit
+# Layer 3 — Recent Audit (fallback)
 # ---------------------------------------------------------------------------
 
 
@@ -169,6 +196,92 @@ def _extract_recent_audit(repo_root: pathlib.Path) -> str:
     # Keep the most recent 20 lines
     recent = lines[-20:]
     return "\n".join(recent)
+
+
+# ---------------------------------------------------------------------------
+# Layer 3 — Relevant Reflections (Phase 4+ primary path)
+# ---------------------------------------------------------------------------
+
+
+def _build_query(event: dict, repo_root: pathlib.Path) -> str:
+    """Build a query string from event context and the active goal."""
+    parts: list[str] = []
+
+    # From event: PR/issue title and body excerpt
+    pr = (event or {}).get("pull_request") or {}
+    issue = (event or {}).get("issue") or {}
+    comment = (event or {}).get("comment") or {}
+
+    for src in (pr, issue, comment):
+        title = src.get("title", "")
+        body = src.get("body") or ""
+        if title:
+            parts.append(title)
+        if body:
+            parts.append(body[:300])
+
+    # From active goals: include goal title and acceptance criteria excerpt
+    goals_dir = repo_root / "goals"
+    if goals_dir.is_dir():
+        try:
+            for fname in sorted(goals_dir.iterdir()):
+                if not GOAL_FILE_PATTERN.match(fname.name):
+                    continue
+                try:
+                    txt = fname.read_text(encoding="utf-8")
+                    status = _fm_scalar(txt, "status")
+                    if status == "in-progress":
+                        title = _fm_scalar(txt, "title") or ""
+                        if title:
+                            parts.append(title)
+                        ac_section = _extract_section(txt, "Acceptance Criteria")
+                        if ac_section:
+                            parts.append(ac_section[:200])
+                except OSError:
+                    pass
+        except OSError:
+            pass
+
+    return " ".join(parts)
+
+
+def _extract_relevant_reflections(event: dict, repo_root: pathlib.Path) -> str:
+    """Return summaries of the top-3 most relevant reflections via TF-IDF.
+
+    Uses embed_index if importable; returns "(not available)" otherwise so
+    the caller can fall back to ``_extract_recent_audit``.
+    """
+    ei = _try_import_embed_index()
+    if ei is None:
+        return "(not available)"
+
+    try:
+        index = ei.load_or_build_index(repo_root)
+        if index.get("N", 0) == 0:
+            return "(not available)"
+
+        query = _build_query(event, repo_root)
+        results = ei.query_index(index, query, top_n=3)
+        if not results:
+            return "(not available)"
+
+        reflections_dir = repo_root / "reflections"
+        parts: list[str] = []
+        for filename, score in results:
+            fpath = reflections_dir / filename
+            try:
+                text = fpath.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            # Include the first 400 chars of the reflection body (skip front-matter)
+            body_start = text.find("\n# ")
+            snippet = text[body_start:].strip() if body_start != -1 else text
+            short = snippet[:400].rstrip()
+            parts.append(f"**{filename}** (score {score:.3f})\n{short}")
+
+        return "\n\n".join(parts) if parts else "(not available)"
+    except Exception:  # noqa: BLE001
+        return "(not available)"
 
 
 # ---------------------------------------------------------------------------
@@ -245,6 +358,12 @@ def assemble(event: dict, repo_root: pathlib.Path | None = None) -> str:
         A Markdown string with four labelled sections.  Total length ≤ 6000
         chars.  Individual layers that cannot be read return "(not available)"
         rather than raising an exception.
+
+    Layer 3 strategy (Phase 4+):
+        Attempts to load embed_index and retrieve the top-3 most relevant
+        reflections via TF-IDF cosine similarity.  Falls back to the last 20
+        lines of recent audit logs when embed_index is unavailable or yields no
+        results.
     """
     if repo_root is None:
         repo_root = _DEFAULT_REPO_ROOT
@@ -260,10 +379,17 @@ def assemble(event: dict, repo_root: pathlib.Path | None = None) -> str:
     except Exception:  # noqa: BLE001
         goals = "(not available)"
 
+    # Layer 3: try relevant reflections first; fall back to recent audit
     try:
-        audit = _extract_recent_audit(repo_root)
+        relevant = _extract_relevant_reflections(event, repo_root)
     except Exception:  # noqa: BLE001
-        audit = "(not available)"
+        relevant = "(not available)"
+
+    if relevant == "(not available)":
+        try:
+            relevant = _extract_recent_audit(repo_root)
+        except Exception:  # noqa: BLE001
+            relevant = "(not available)"
 
     try:
         hint = _extract_event_hint(event)
@@ -273,13 +399,13 @@ def assemble(event: dict, repo_root: pathlib.Path | None = None) -> str:
     # Apply per-layer budgets
     standing = _budget(standing, LAYER_LIMITS["standing_context"])
     goals = _budget(goals, LAYER_LIMITS["active_goal"])
-    audit = _budget(audit, LAYER_LIMITS["recent_audit"])
+    relevant = _budget(relevant, LAYER_LIMITS["relevant_context"])
     hint = _budget(hint, LAYER_LIMITS["event_hint"])
 
     sections = [
         ("## Standing Context", standing),
         ("## Active Goal", goals),
-        ("## Recent Audit", audit),
+        ("## Relevant Context", relevant),
         ("## Event Hint", hint),
     ]
 
