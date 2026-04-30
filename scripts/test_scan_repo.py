@@ -31,6 +31,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
 from scan_repo import (  # noqa: E402
     _count_archived_tickets,
     _count_reflection_files,
+    _extract_section4_lines,
     _parse_last_advanced_date,
     _parse_questions_section,
     _read_daily_budget,
@@ -39,6 +40,7 @@ from scan_repo import (  # noqa: E402
     check_audit_overrun,
     check_missing_reflections,
     check_open_questions,
+    check_skill_evolution,
     check_stale_goals,
     load_watchlist,
     main,
@@ -374,6 +376,120 @@ class TestExitCodes(unittest.TestCase):
             _make_goal(root, "G-001", "in-progress", old_date)
             code = main(["--watchlist", str(wl_path), "--repo-root", str(root)])
             self.assertEqual(code, 1)
+
+
+# ---------------------------------------------------------------------------
+# Test: skill-evolution
+# ---------------------------------------------------------------------------
+
+
+class TestSkillEvolution(unittest.TestCase):
+    def _make_reflection(
+        self, root: pathlib.Path, name: str, section4_lines: list[str]
+    ) -> None:
+        """Create a minimal R-NNN.md with specified §4 lines."""
+        body = "\n".join(f"- {ln}" for ln in section4_lines)
+        content = f"""\
+---
+id: {name}
+date: 2026-04-30T00:00Z
+author: "@Copilot"
+ticket: T-007
+---
+
+# Reflection {name}
+
+## 4. What would I change next time?
+
+{body}
+"""
+        _write(root / "reflections" / f"{name}.md", content)
+
+    def test_at_threshold_is_finding(self) -> None:
+        """Exactly threshold_count candidates → finding reported."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            for i in range(1, 4):
+                self._make_reflection(root, f"R-{i:03d}", [f"Fix something → skill update #{i}"])
+            findings = check_skill_evolution({"threshold_count": 3}, root)
+            self.assertGreater(len(findings), 0)
+            # Summary line should mention the count
+            self.assertIn("3", findings[0])
+
+    def test_below_threshold_passes(self) -> None:
+        """Fewer candidates than threshold → no finding."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            self._make_reflection(root, "R-001", ["Fix A → skill update"])
+            self._make_reflection(root, "R-002", ["Fix B → workflow change"])
+            findings = check_skill_evolution({"threshold_count": 3}, root)
+            self.assertEqual(findings, [])
+
+    def test_missing_reflections_dir_skips_silently(self) -> None:
+        """Missing reflections/ dir → no crash, empty findings."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            # Do not create reflections/ directory at all
+            findings = check_skill_evolution({"threshold_count": 3}, root)
+            self.assertEqual(findings, [])
+
+    def test_only_section4_lines_are_scanned(self) -> None:
+        """Markers in other sections are not counted."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            # Put markers in §1 and §2 — should NOT be counted
+            content = """\
+---
+id: R-001
+date: 2026-04-30T00:00Z
+author: "@Copilot"
+ticket: T-007
+---
+
+# Reflection R-001
+
+## 1. Did the task meet its acceptance criteria?
+
+- Use embed_index → skill update (this is in §1, not §4)
+
+## 2. Which memories did I rely on?
+
+- something → workflow change (also not §4)
+
+## 4. What would I change next time?
+
+- Only one real candidate → skill update
+"""
+            _write(root / "reflections" / "R-001.md", content)
+            findings = check_skill_evolution({"threshold_count": 3}, root)
+            # Only 1 line is in §4, below threshold of 3 → no finding
+            self.assertEqual(findings, [])
+
+    def test_case_insensitive_marker_detection(self) -> None:
+        """Marker detection is case-insensitive ('→ SKILL UPDATE' matches)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            for i in range(1, 4):
+                self._make_reflection(
+                    root, f"R-{i:03d}", [f"Fix → SKILL UPDATE #{i}"]
+                )
+            findings = check_skill_evolution({"threshold_count": 3}, root)
+            self.assertGreater(len(findings), 0)
+
+    def test_extract_section4_lines_returns_only_marker_lines(self) -> None:
+        """_extract_section4_lines returns only lines with evolution markers."""
+        text = """\
+## 4. What would I change next time?
+
+- Fix foo → skill update
+- No marker here, plain text
+- Fix bar → doc update
+- Another plain line
+"""
+        lines = _extract_section4_lines(text)
+        self.assertEqual(len(lines), 2)
+        self.assertTrue(any("skill update" in ln for ln in lines))
+        self.assertTrue(any("doc update" in ln for ln in lines))
 
 
 if __name__ == "__main__":

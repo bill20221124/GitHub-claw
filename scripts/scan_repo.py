@@ -417,6 +417,85 @@ def check_audit_overrun(config: dict, repo_root: pathlib.Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Check: skill-evolution
+# ---------------------------------------------------------------------------
+
+_EVOLUTION_MARKERS = re.compile(
+    r"→\s*(skill update|workflow change|doc update)",
+    flags=re.IGNORECASE,
+)
+
+
+def _extract_section4_lines(text: str) -> list[str]:
+    """Return lines from the '## 4.' section of a reflection file.
+
+    Only lines that contain an evolution marker are returned.
+    Returns an empty list when the section is absent.
+    """
+    section_match = re.search(
+        r"^##\s+4\.",
+        text,
+        flags=re.MULTILINE,
+    )
+    if not section_match:
+        return []
+
+    # Slice from section start to either the next ## heading or end-of-file
+    section_start = section_match.start()
+    next_section = re.search(r"^##\s+", text[section_match.end():], flags=re.MULTILINE)
+    if next_section:
+        section_text = text[section_start: section_match.end() + next_section.start()]
+    else:
+        section_text = text[section_start:]
+
+    return [
+        line for line in section_text.splitlines()
+        if _EVOLUTION_MARKERS.search(line)
+    ]
+
+
+def check_skill_evolution(config: dict, repo_root: pathlib.Path) -> list[str]:
+    """Return findings when the number of unprocessed evolution candidate lines
+    across all R-NNN.md files reaches threshold_count.
+
+    Only lines inside '## 4. What would I change next time?' sections are scanned.
+    Files that are missing or unreadable are silently skipped.
+    """
+    threshold_count: int = int(config.get("threshold_count", 3))
+    reflections_dir = repo_root / "reflections"
+    findings: list[str] = []
+
+    try:
+        filenames = sorted(
+            f for f in os.listdir(reflections_dir) if REFLECTION_FILE_PATTERN.match(f)
+        )
+    except OSError:
+        return findings  # silently skip when directory is missing
+
+    candidates: list[str] = []
+    for filename in filenames:
+        path = reflections_dir / filename
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+
+        for line in _extract_section4_lines(text):
+            summary = line.strip()[:120]
+            candidates.append(f"`{filename}`: {summary}")
+
+    if len(candidates) >= threshold_count:
+        findings.append(
+            f"  - {len(candidates)} unprocessed skill-evolution candidate(s)"
+            f" (threshold {threshold_count}):"
+        )
+        for c in candidates:
+            findings.append(f"    - {c}")
+
+    return findings
+
+
+# ---------------------------------------------------------------------------
 # Dispatcher
 # ---------------------------------------------------------------------------
 
@@ -425,6 +504,7 @@ CHECK_FUNCTIONS = {
     "missing-reflections": check_missing_reflections,
     "open-questions": check_open_questions,
     "audit-overrun": check_audit_overrun,
+    "skill-evolution": check_skill_evolution,
 }
 
 

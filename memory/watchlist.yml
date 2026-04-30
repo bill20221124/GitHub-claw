@@ -29,3 +29,9 @@ checks:
     enabled: true
     threshold_pct: 80
     description: "今日 audit 文件中 token 用量超过 policies/budget.md daily_tokens 的 threshold_pct%"
+
+  skill-evolution:
+    id: skill-evolution
+    enabled: true
+    threshold_count: 3
+    description: "R-NNN.md §4 中含 '→ skill update'/'→ workflow change'/'→ doc update' 的未处理候选行数 ≥ threshold_count"

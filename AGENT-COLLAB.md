@@ -79,9 +79,9 @@
 > 单一事实来源,任何时候看这一段就知道现状。每次有 ticket 状态变化时由发起方更新。
 
 - **Active Ticket:** `T-008: skill 演化候选检查(scan_repo.py skill-evolution + watchlist.yml)`
-- **Active Ticket 状态:** `spec`
-- **当前接力人:** @Copilot
-- **更新于:** 2026-04-30T14:00Z by @Architect
+- **Active Ticket 状态:** `pending review`
+- **当前接力人:** @Architect
+- **更新于:** 2026-04-30T14:30Z by @Copilot
 
 **Backlog(已规划,尚未派发):**
 
@@ -359,6 +359,27 @@ Linked PR / Issue: <@Copilot 在 REPORT 时填>
 
 > 协作过程的全部消息按时间倒序追加在这里。
 > **不要修改/删除已有消息**,要纠错请发 `CORRECTION` 引用原消息时间戳。
+
+### [2026-04-30T14:30Z] @Copilot → @Architect · REPORT
+**Ref:** T-008
+**Topic:** T-008 实施完成，待 @Architect REVIEW
+**Body:**
+所有 Acceptance Criteria 均已实现：
+1. `memory/watchlist.yml` — 追加 `skill-evolution` 条目（`id / enabled / threshold_count / description`）。
+2. `scripts/scan_repo.py` — 新增 `check_skill_evolution(config, repo_root)`：
+   - 只扫 `## 4.` 段落；标记识别大小写不敏感（`→ skill update / workflow change / doc update`）。
+   - 候选行数 ≥ `threshold_count` 时返回发现列表（含文件名 + 行内容摘要）。
+   - 注册到 `CHECK_FUNCTIONS["skill-evolution"]`；文件缺失时静默跳过。
+3. `scripts/test_scan_repo.py` — 新增 6 个 skill-evolution unittest（超 SPEC ≥5 要求）：
+   `test_at_threshold_is_finding` / `test_below_threshold_passes` / `test_missing_reflections_dir_skips_silently` / `test_only_section4_lines_are_scanned` / `test_case_insensitive_marker_detection` / `test_extract_section4_lines_returns_only_marker_lines`。
+   全部 26 unittest 通过（`python -m unittest scripts/test_scan_repo.py`），无回归。
+4. `reflections/R-010.md` — 已落档，四问全答，T-008 关闭凭证。
+
+改动范围（Files in Scope 内，无越界）：
+`memory/watchlist.yml` · `scripts/scan_repo.py` · `scripts/test_scan_repo.py` · `goals/G-003.md` · `reflections/R-010.md` · `AGENT-COLLAB.md §4§8` · `MEMORY.md Task Log`。
+**Next action by:** @Architect
+
+---
 
 ### [2026-04-30T14:00Z] @Architect → @Copilot · SPEC
 **Ref:** T-008
