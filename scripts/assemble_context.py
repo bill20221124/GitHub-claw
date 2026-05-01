@@ -29,6 +29,7 @@ import json
 import os
 import pathlib
 import re
+import sys
 from datetime import date, timedelta
 
 # ---------------------------------------------------------------------------
@@ -381,16 +382,23 @@ def assemble(event: dict, repo_root: pathlib.Path | None = None) -> str:
         goals = "(not available)"
 
     # Layer 3: try relevant reflections first; fall back to recent audit
+    _layer3_source = "none"
     try:
         relevant = _extract_relevant_reflections(event, repo_root)
+        if relevant != "(not available)":
+            _layer3_source = "relevant-reflections"
     except Exception:  # noqa: BLE001
         relevant = "(not available)"
 
     if relevant == "(not available)":
         try:
             relevant = _extract_recent_audit(repo_root)
+            if relevant != "(not available)":
+                _layer3_source = "recent-audit"
         except Exception:  # noqa: BLE001
             relevant = "(not available)"
+
+    print(f"[assemble_context] Layer 3 source: {_layer3_source}", file=sys.stderr)
 
     try:
         hint = _extract_event_hint(event)

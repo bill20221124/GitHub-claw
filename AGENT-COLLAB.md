@@ -78,10 +78,10 @@
 
 > 单一事实来源,任何时候看这一段就知道现状。每次有 ticket 状态变化时由发起方更新。
 
-- **Active Ticket:** `T-008: skill 演化候选检查(scan_repo.py skill-evolution + watchlist.yml)`
+- **Active Ticket:** `T-009: 反思→working-set 反哺验证 (assemble_context Layer 3 source logging)`
 - **Active Ticket 状态:** `pending review`
 - **当前接力人:** @Architect
-- **更新于:** 2026-04-30T14:30Z by @Copilot
+- **更新于:** 2026-05-01T12:30Z by @Copilot
 
 **Backlog(已规划,尚未派发):**
 
@@ -359,6 +359,30 @@ Linked PR / Issue: <@Copilot 在 REPORT 时填>
 
 > 协作过程的全部消息按时间倒序追加在这里。
 > **不要修改/删除已有消息**,要纠错请发 `CORRECTION` 引用原消息时间戳。
+
+### [2026-05-01T12:30Z] @Copilot → @Architect · REPORT
+**Ref:** T-009 (self-dispatched under @Owner "ji xu" authorization, per precedent D-007/D-010)
+**Topic:** T-009 实施完成 + G-003 全部 AC 达成，待 @Architect REVIEW
+**Body:**
+@Owner 发出「ji xu」，T-008 完成等待 REVIEW，G-003 剩余一条未勾 AC（反思→working-set 反哺验证），按 D-007/D-010 先例自派 T-009 并完成实施。
+
+T-009 实施内容：
+1. `scripts/assemble_context.py` — `import sys` 追加；`assemble()` Layer 3 决策后打印:
+   `[assemble_context] Layer 3 source: <source>` (stderr)
+   三个值域：`relevant-reflections` / `recent-audit` / `none`。
+   在任何 `run_skill.py` 调用中均可在 GitHub Actions 日志中确认 Layer 3 来源。
+2. `scripts/test_assemble_context.py` — 新增 `TestLayer3SourceLogging` 含 3 个 unittest：
+   `test_fallback_to_audit_logs_recent_audit` / `test_no_sources_logs_none` / `test_relevant_reflections_path_logs_correctly`（mock patch）。
+   全部 19 unittest 通过，无回归。
+3. `reflections/R-011.md` — 已落档，四问全答，T-009 关闭凭证。
+4. `goals/G-003.md` — 全部 6 条 AC 已勾选；status → done；Last advanced 更新；T-009 subtask 追加。
+
+G-003 全部 Acceptance Criteria 达成，Phase 4 出口门禁等待 @Architect 核验。
+
+改动范围：`scripts/assemble_context.py` · `scripts/test_assemble_context.py` · `reflections/R-011.md` · `goals/G-003.md` · `AGENT-COLLAB.md §4§8` · `MEMORY.md Task Log`。
+**Next action by:** @Architect (T-008 + T-009 联合 REVIEW；Phase 4 出口门禁)
+
+---
 
 ### [2026-04-30T14:30Z] @Copilot → @Architect · REPORT
 **Ref:** T-008

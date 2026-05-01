@@ -23,7 +23,9 @@ Coverage:
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import pathlib
 import sys
 import tempfile
@@ -297,6 +299,72 @@ class TestBudget(unittest.TestCase):
         result = ac._budget(text, 50)
         self.assertLessEqual(len(result), 50)
         self.assertIn("[truncated]", result)
+
+
+# ---------------------------------------------------------------------------
+# Test 15–17 — Layer 3 source logging
+# ---------------------------------------------------------------------------
+
+
+class TestLayer3SourceLogging(unittest.TestCase):
+    """Verify that assemble() prints the Layer 3 source to stderr.
+
+    Tests confirm the 反思→working-set 反哺验证 (G-003) acceptance criterion:
+    '[assemble_context] Layer 3 source: <source>' is emitted so operators can
+    confirm in GitHub Actions logs whether reflections or audit is being used.
+    """
+
+    def _capture_stderr(self, event: dict, root: pathlib.Path) -> str:
+        """Call assemble() and return whatever was written to stderr."""
+        buf = io.StringIO()
+        with contextlib.redirect_stderr(buf):
+            ac.assemble(event, root)
+        return buf.getvalue()
+
+    # Test 15 — fallback path logs "recent-audit"
+    def test_fallback_to_audit_logs_recent_audit(self) -> None:
+        """When embed_index is unavailable and audit files exist, layer3 = recent-audit."""
+        from datetime import date as _date
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            today = _date.today().isoformat()
+            _write(
+                root / "memory" / "audit" / f"{today}.md",
+                "# Audit\n\n| 10:00Z | finish | summarize | success | 100 | 1 |\n",
+            )
+            # No reflections/ dir → embed_index returns "(not available)"
+            log = self._capture_stderr({}, root)
+            self.assertIn("[assemble_context] Layer 3 source:", log)
+            self.assertIn("recent-audit", log)
+
+    # Test 16 — no audit, no reflections → logs "none"
+    def test_no_sources_logs_none(self) -> None:
+        """When neither reflections nor audit files are available, layer3 = none."""
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            # Empty repo root — no reflections, no audit
+            log = self._capture_stderr({}, root)
+            self.assertIn("[assemble_context] Layer 3 source:", log)
+            self.assertIn("none", log)
+
+    # Test 17 — patched reflections path logs "relevant-reflections"
+    def test_relevant_reflections_path_logs_correctly(self) -> None:
+        """When _extract_relevant_reflections returns content, layer3 = relevant-reflections."""
+        from unittest.mock import patch
+
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+
+            # Patch _extract_relevant_reflections to simulate a successful retrieval
+            with patch.object(
+                ac,
+                "_extract_relevant_reflections",
+                return_value="**R-001.md** (score 0.850)\nSome reflection content",
+            ):
+                log = self._capture_stderr({}, root)
+
+            self.assertIn("[assemble_context] Layer 3 source:", log)
+            self.assertIn("relevant-reflections", log)
 
 
 if __name__ == "__main__":
