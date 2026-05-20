@@ -41,11 +41,11 @@ jobs:
             --color "0E8A16" \
             --description "Automated proactive watch findings" \
             --force; then
-            echo "Warning: failed to ensure label '$LABEL'; proceeding with issue creation fallback."
+            echo "Warning: failed to ensure label '$LABEL'; will try labeled issue creation, then fallback to unlabeled."
           fi
 
           TITLE="[Agent Watch] $(date -u +%Y-%m-%d) 巡视报告"
-          if gh issue list --state open --limit 200 --json title --jq '.[].title' | grep -Fxq "$TITLE"; then
+          if gh issue list --state open --limit 1000 --json title --jq '.[].title' | grep -Fxq "$TITLE"; then
             echo "Open issue already exists for title: $TITLE"
             exit 0
           fi
