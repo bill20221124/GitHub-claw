@@ -41,12 +41,19 @@ jobs:
             --color "0E8A16" \
             --description "Automated proactive watch findings" \
             --force; then
-            echo "Warning: failed to ensure label '$LABEL'. Will attempt issue creation; may fallback to unlabeled."
+            echo "Warning: failed to ensure label exists. Issue creation will proceed; if labeling fails, will retry without label."
           fi
 
           TITLE="[Agent Watch] $(date -u +%Y-%m-%d) 巡视报告"
-          SEARCH_QUERY="repo:${GITHUB_REPOSITORY} is:issue is:open in:title \"$TITLE\""
-          EXISTS="$(gh api --method GET search/issues -f q="$SEARCH_QUERY" -q '.total_count')"
+          SEARCH_QUERY="repo:${GITHUB_REPOSITORY} is:issue is:open in:title $TITLE"
+          if ! EXISTS="$(gh api --method GET search/issues -f q="$SEARCH_QUERY" -q '.total_count')"; then
+            echo "Warning: failed to query existing issues; continuing with creation attempt."
+            EXISTS=0
+          fi
+          if ! [[ "$EXISTS" =~ ^[0-9]+$ ]]; then
+            echo "Warning: unexpected search result '$EXISTS'; continuing with creation attempt."
+            EXISTS=0
+          fi
           if [ "$EXISTS" -gt 0 ]; then
             echo "Open issue already exists for title: $TITLE"
             exit 0
