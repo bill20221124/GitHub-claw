@@ -45,8 +45,7 @@ jobs:
           fi
 
           TITLE="[Agent Watch] $(date -u +%Y-%m-%d) 巡视报告"
-          EXISTS="$(gh issue list --state open --search "$TITLE in:title" --json number --jq 'length')"
-          if [ "$EXISTS" -gt 0 ]; then
+          if gh issue list --state open --limit 200 --json title --jq '.[].title' | grep -Fxq "$TITLE"; then
             echo "Open issue already exists for title: $TITLE"
             exit 0
           fi
@@ -56,7 +55,10 @@ jobs:
             --label "$LABEL" \
             --body-file /tmp/scan_report.md; then
             echo "Label application failed, retrying issue creation without label."
-            gh issue create \
+            if ! gh issue create \
               --title "$TITLE" \
-              --body-file /tmp/scan_report.md
+              --body-file /tmp/scan_report.md; then
+              echo "Error: failed to create proactive watch issue even without label."
+              exit 1
+            fi
           fi
