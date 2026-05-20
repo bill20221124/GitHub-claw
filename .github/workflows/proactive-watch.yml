@@ -37,13 +37,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           LABEL="agent-watch"
-          gh label create "$LABEL" \
+          if ! gh label create "$LABEL" \
             --color "0E8A16" \
             --description "Automated proactive watch findings" \
-            --force || true
+            --force; then
+            echo "Warning: failed to ensure label '$LABEL'; proceeding with issue creation fallback."
+          fi
 
           TITLE="[Agent Watch] $(date -u +%Y-%m-%d) 巡视报告"
-          EXISTS="$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq 'length')"
+          EXISTS="$(gh issue list --state open --search "$TITLE in:title" --json number --jq 'length')"
           if [ "$EXISTS" -gt 0 ]; then
             echo "Open issue already exists for title: $TITLE"
             exit 0
@@ -53,7 +55,7 @@ jobs:
             --title "$TITLE" \
             --label "$LABEL" \
             --body-file /tmp/scan_report.md; then
-            echo "Label create/apply failed, retrying issue creation without label."
+            echo "Label application failed, retrying issue creation without label."
             gh issue create \
               --title "$TITLE" \
               --body-file /tmp/scan_report.md
