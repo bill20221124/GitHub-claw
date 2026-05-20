@@ -41,11 +41,11 @@ jobs:
             --color "0E8A16" \
             --description "Automated proactive watch findings" \
             --force; then
-            echo "Warning: failed to ensure label exists. Issue creation will proceed; if labeling fails, will retry without label."
+            echo "Warning: failed to ensure label exists. Will attempt issue creation; if labeling fails during creation, will retry without label."
           fi
 
           TITLE="[Agent Watch] $(date -u +%Y-%m-%d) 巡视报告"
-          SEARCH_QUERY="repo:${GITHUB_REPOSITORY} is:issue is:open in:title \"$TITLE\""
+          SEARCH_QUERY="repo:${GITHUB_REPOSITORY} is:issue is:open \"$TITLE\""
           if ! EXISTS="$(gh api --method GET search/issues -f q="$SEARCH_QUERY" -q '.total_count')"; then
             echo "Error: failed to query existing issues before create."
             exit 1
@@ -63,7 +63,7 @@ jobs:
             --title "$TITLE" \
             --label "$LABEL" \
             --body-file /tmp/scan_report.md 2>&1)"; then
-            echo "Label application failed, retrying issue creation without label. Details: $CREATE_ERR"
+            echo "Issue creation with label failed, retrying without label. Details: $CREATE_ERR"
             if ! FALLBACK_ERR="$(gh issue create \
               --title "$TITLE" \
               --body-file /tmp/scan_report.md 2>&1)"; then
